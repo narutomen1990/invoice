@@ -24,11 +24,14 @@ VPS Hostinger ตัวนี้ใช้ pattern **Docker + Traefik** อยู
 
 SSH เข้า VPS แล้วรัน:
 ```bash
-docker network ls | grep traefik
-docker inspect traefik-traefik-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{println}}{{end}}'
+docker inspect service-center-app-1 --format '{{json .Config.Labels}}' | python3 -m json.tool
 ```
 
-จดชื่อ network ไว้ (เช่น `traefik-traefik_default`) — จะใช้แก้ใน `docker-compose.production.yml`
+ดูค่า `traefik.docker.network` — ต้องตรงกับใน `docker-compose.production.yml` (ปัจจุบันตั้งไว้ที่ `openclaw-ulvd_default`)
+
+ถ้าไม่ตรง แก้ทั้ง 2 จุดใน docker-compose:
+- `traefik.docker.network=...` (ใน labels)
+- `name: ...` (ใน networks → traefik_proxy)
 
 ---
 
@@ -47,15 +50,13 @@ git clone https://github.com/narutomen1990/invoice.git .
 
 ---
 
-## Step 4: แก้ network name (ถ้าจำเป็น)
-
-ถ้าชื่อ network ใน Step 2 **ไม่ใช่** `traefik-traefik_default` ให้แก้ใน docker-compose.production.yml บรรทัดสุดท้าย:
+## Step 4: ตรวจ network name (เผื่อ Hostinger เปลี่ยน)
 
 ```bash
-nano docker-compose.production.yml
-# ค้นบรรทัด: name: traefik-traefik_default
-# แก้ให้ตรงกับชื่อจริง
+docker network ls | grep openclaw
 ```
+
+ถ้า `openclaw-ulvd_default` ไม่มี → แก้ใน docker-compose.production.yml ทั้ง 2 จุด
 
 ---
 

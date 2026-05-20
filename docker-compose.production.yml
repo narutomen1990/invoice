@@ -54,17 +54,15 @@ services:
     volumes:
       - invoice_uploads:/app/public/uploads
     networks:
-      - invoice_internal
-      - traefik_proxy
+      - invoice_internal       # ภายในระหว่าง app ↔ db
+      - traefik_proxy          # network ของ Traefik (ตรงกับ pattern ของ service-center)
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=traefik_proxy"
-      # HTTP → HTTPS redirect
+      - "traefik.docker.network=openclaw-ulvd_default"
+      # HTTP (port 80)
       - "traefik.http.routers.invoice-http.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.invoice-http.entrypoints=web"
-      - "traefik.http.routers.invoice-http.middlewares=https-redirect"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      # HTTPS
+      # HTTPS (port 443) + Let's Encrypt
       - "traefik.http.routers.invoice.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.invoice.entrypoints=websecure"
       - "traefik.http.routers.invoice.tls=true"
@@ -78,14 +76,12 @@ volumes:
     name: invoice_uploads
 
 networks:
-  # network ภายในระหว่าง app ↔ db
+  # network ภายในระหว่าง app ↔ db (ไม่ expose ออกข้างนอก)
   invoice_internal:
     name: invoice_internal
     driver: bridge
 
-  # network ของ Traefik (ที่มีอยู่แล้วบน VPS)
-  # *** เปลี่ยน "name:" ให้ตรงกับชื่อจริง ***
-  # หาด้วย: docker network ls | grep traefik
+  # network ของ Traefik (มีอยู่แล้วบน VPS — ใช้แบบ external)
   traefik_proxy:
     external: true
-    name: traefik-traefik_default
+    name: openclaw-ulvd_default
