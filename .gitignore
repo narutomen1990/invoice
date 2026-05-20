@@ -1,0 +1,40 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+
+.env
+.env.local
+.env.production
+.env.development.local
+
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+etl/output/
+etl/snapshots/*.tar.gz
+etl/snapshots/*.json
+
+coverage/
+.turbo/
+.cache/
+
+drizzle/
+
+# Database backups (do not commit)
+*.sql
+*.sql.gz
+*.dump
+
+# Untitled images / scratch files
+Untitled*.jpg
+Untitled*.png
+
+# Facebook-style image filenames (raw source images)
+[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*.jpg
+
+# TypeScript build cache
+tsconfig.tsbuildinfo

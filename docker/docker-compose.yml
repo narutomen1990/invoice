@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: invoice_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: invoice_app
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: invoice_db
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+      TZ: Asia/Bangkok
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoice_app -d invoice_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - invoice_net
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: invoice_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin-servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - invoice_net
+
+volumes:
+  postgres_data:
+    name: invoice_postgres_data
+  pgadmin_data:
+    name: invoice_pgadmin_data
+
+networks:
+  invoice_net:
+    name: invoice_net
+    driver: bridge

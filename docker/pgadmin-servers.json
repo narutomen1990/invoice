@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Invoice DB (local)",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "invoice_db",
+      "Username": "invoice_app",
+      "PassFile": "/pgpassfile",
+      "SSLMode": "prefer"
+    }
+  }
+}

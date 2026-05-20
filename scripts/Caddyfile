@@ -1,0 +1,39 @@
+# ============================================================
+# Caddyfile — HTTPS reverse proxy สำหรับ Invoice App
+#
+# วาง: sudo cp scripts/Caddyfile /etc/caddy/Caddyfile
+# Reload: sudo systemctl reload caddy
+#
+# Caddy จะขอ Let's Encrypt SSL อัตโนมัติ (port 80/443 ต้องเปิด + domain ชี้มา)
+# ============================================================
+
+# !!! เปลี่ยน "invoice.example.com" เป็น domain จริงของคุณ
+invoice.example.com {
+    # Reverse proxy ไป Next.js
+    reverse_proxy localhost:3000
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+
+    # ขนาด upload สูงสุด 20 MB (เผื่ออัพโหลดโลโก้/รูปลายเซ็น)
+    request_body {
+        max_size 20MB
+    }
+
+    # บีบอัด response
+    encode zstd gzip
+
+    # log
+    log {
+        output file /var/log/caddy/invoice-app.log {
+            roll_size 50MB
+            roll_keep 5
+        }
+    }
+}

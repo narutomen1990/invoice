@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+:root {
+  font-family: "Sarabun", "Noto Sans Thai", system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-feature-settings: "tnum";
+}

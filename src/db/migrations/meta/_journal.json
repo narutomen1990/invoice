@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1777660154971,
+      "tag": "0000_magenta_malcolm_colcord",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777914717384,
+      "tag": "0001_simple_fat_cobra",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777915673897,
+      "tag": "0002_closed_spectrum",
+      "breakpoints": true
+    }
+  ]
+}
