@@ -1,0 +1,46 @@
+node_modules
+.next
+.git
+.gitignore
+.env
+.env.local
+.env.development.local
+.env.production.local
+
+# Build artifacts
+out
+build
+dist
+coverage
+.turbo
+.cache
+
+# Editor & OS
+.vscode
+.idea
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Backup / scratch
+*.sql
+*.sql.gz
+*.dump
+Untitled*.jpg
+Untitled*.png
+
+# ETL data (huge)
+etl/output
+etl/snapshots
+
+# Docker scripts (not needed inside image)
+scripts/setup-*
+scripts/deploy-app.sh
+scripts/Caddyfile
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+**/__tests__

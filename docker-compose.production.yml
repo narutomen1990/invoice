@@ -1,0 +1,91 @@
+# ============================================================
+# docker-compose.production.yml
+# Production deployment สำหรับ Hostinger VPS ที่มี Traefik อยู่แล้ว
+#
+# ใช้:
+#   1. คัดลอกไฟล์นี้ + Dockerfile ขึ้น VPS
+#   2. แก้ค่าใน .env (DOMAIN, DB_PASSWORD, AUTH_SECRET)
+#   3. docker compose -f docker-compose.production.yml up -d --build
+#
+# *** หลังรัน ตรวจชื่อ network ของ Traefik ***
+# docker network ls | grep traefik
+# แล้วแก้บรรทัด "name: traefik-traefik_default" ให้ตรง
+# ============================================================
+
+services:
+  invoice-db:
+    image: postgres:16-alpine
+    container_name: invoice-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: invoice_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: invoice_db
+      LANG: en_US.UTF-8
+      TZ: Asia/Bangkok
+    volumes:
+      - invoice_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoice_app -d invoice_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - invoice_internal
+    # ไม่ expose ports - app เข้าผ่าน docker network เท่านั้น
+
+  invoice-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: invoice-app:latest
+    container_name: invoice-app
+    restart: unless-stopped
+    depends_on:
+      invoice-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://invoice_app:${DB_PASSWORD}@invoice-db:5432/invoice_db
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_URL: https://${DOMAIN}
+      NEXT_PUBLIC_APP_URL: https://${DOMAIN}
+      TZ: Asia/Bangkok
+    volumes:
+      - invoice_uploads:/app/public/uploads
+    networks:
+      - invoice_internal
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.invoice-http.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.invoice-http.entrypoints=web"
+      - "traefik.http.routers.invoice-http.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      # HTTPS
+      - "traefik.http.routers.invoice.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.invoice.entrypoints=websecure"
+      - "traefik.http.routers.invoice.tls=true"
+      - "traefik.http.routers.invoice.tls.certresolver=letsencrypt"
+      - "traefik.http.services.invoice.loadbalancer.server.port=3000"
+
+volumes:
+  invoice_pgdata:
+    name: invoice_pgdata
+  invoice_uploads:
+    name: invoice_uploads
+
+networks:
+  # network ภายในระหว่าง app ↔ db
+  invoice_internal:
+    name: invoice_internal
+    driver: bridge
+
+  # network ของ Traefik (ที่มีอยู่แล้วบน VPS)
+  # *** เปลี่ยน "name:" ให้ตรงกับชื่อจริง ***
+  # หาด้วย: docker network ls | grep traefik
+  traefik_proxy:
+    external: true
+    name: traefik-traefik_default
