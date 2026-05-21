@@ -77,6 +77,7 @@ export default async function EditInvoicePage({
             remark1: doc.remark1,
             remark2: doc.remark2,
             items: items.map((it) => ({
+              lineNo: String(it.lineNo ?? ""),
               productCode: it.productCode ?? "",
               description: it.description ?? "",
               quantity: String(it.quantity),

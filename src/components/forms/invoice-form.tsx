@@ -38,6 +38,7 @@ type Product = {
 };
 
 type ItemRow = {
+  lineNo: string;
   productCode: string;
   description: string;
   quantity: string;
@@ -72,9 +73,10 @@ export type InvoiceFormInitial = {
 };
 
 const EMPTY_ROW: ItemRow = {
+  lineNo: "",
   productCode: "",
   description: "",
-  quantity: "1",
+  quantity: "",
   unit: "",
   unitPrice: "0",
 };
@@ -187,7 +189,8 @@ export function InvoiceForm({
     }
     setMemo(q.memo ?? "");
     setRemark1(q.remark1 ?? "");
-    const mapped: ItemRow[] = q.items.map((it) => ({
+    const mapped: ItemRow[] = q.items.map((it, idx) => ({
+      lineNo: String(idx + 1),
       productCode: it.productCode ?? "",
       description: it.description,
       quantity: String(it.quantity),
@@ -338,10 +341,11 @@ export function InvoiceForm({
 
     const validItems = items
       .filter((it) => it.description.trim())
-      .map((it) => {
+      .map((it, idx) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
         return {
+          lineNo: parseInt(it.lineNo, 10) || idx + 1,
           productCode: it.productCode || null,
           description: it.description,
           quantity: q,
@@ -699,8 +703,13 @@ export function InvoiceForm({
                         ))}
                       </Select>
                     </td>
-                    <td className="border border-sky-200 px-1 text-center text-[11px] text-zinc-600">
-                      {i + 1}
+                    <td className="border border-sky-200 p-0">
+                      <Input
+                        value={row.lineNo}
+                        onChange={(e) => updateItem(i, "lineNo", e.target.value)}
+                        placeholder={String(i + 1)}
+                        className="h-7 w-full border-0 bg-transparent text-center text-[11px] tabular-nums focus:ring-0"
+                      />
                     </td>
                     <td className="border border-sky-200 p-0">
                       <Input
