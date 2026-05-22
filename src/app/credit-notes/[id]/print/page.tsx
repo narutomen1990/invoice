@@ -11,7 +11,9 @@ import { PrintActions } from "@/app/invoices/[id]/print/print-actions";
 
 export const dynamic = "force-dynamic";
 
-const TARGET_ROWS = 14;
+// 12 keeps the items table substantial while leaving A4 headroom, so a wrapped
+// line or renderer drift never spills to a 2nd page (was 14 — only ~4 mm spare).
+const TARGET_ROWS = 12;
 
 function branchLabel(code: string | null): string {
   if (!code) return "";

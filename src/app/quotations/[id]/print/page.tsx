@@ -10,7 +10,9 @@ import { PrintActions } from "./print-actions";
 
 export const dynamic = "force-dynamic";
 
-const TARGET_ROWS = 14;
+// 12 keeps the items table substantial while leaving A4 headroom, so a wrapped
+// line or renderer drift never spills to a 2nd page (was 14 — overflowed).
+const TARGET_ROWS = 12;
 
 type QuotationLegacyData = {
   quotationTerms?: {
