@@ -41,7 +41,11 @@ export async function GET(
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  const origin = `${reqUrl.protocol}//${reqUrl.host}`;
+  // Puppeteer runs *inside* the container — render the print page via localhost,
+  // never the public domain. Docker has no NAT hairpin back to the public host,
+  // so page.goto() to invoice.vmcamera.com hangs and the PDF download fails
+  // ("site wasn't available"). 127.0.0.1 talks straight to this same server.
+  const origin = `http://127.0.0.1:${process.env.PORT ?? "3000"}`;
   const targetUrl = `${origin}${printPath}`;
 
   const browser = await getBrowser();
