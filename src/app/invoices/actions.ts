@@ -12,7 +12,7 @@ import { writeJournal } from "@/lib/audit";
 import { bahtText } from "@/lib/thai/number";
 
 const ItemInput = z.object({
-  lineNo: z.coerce.number().int().min(0).optional(),
+  lineNo: z.coerce.number().int().min(0).nullable().optional(),
   productCode: z.string().nullable().optional(),
   description: z.string().min(1, "กรุณากรอกรายการ"),
   quantity: z.coerce.number().min(0).default(0),
@@ -232,9 +232,9 @@ export async function createInvoiceAction(formData: FormData): Promise<{ error?:
 
     if (input.items.length) {
       await tx.insert(documentItems).values(
-        input.items.map((it, idx) => ({
+        input.items.map((it) => ({
           documentId: doc.id,
-          lineNo: it.lineNo ?? idx + 1,
+          lineNo: it.lineNo ?? null,
           productCodeSnapshot: it.productCode ?? null,
           description: it.description,
           quantity: it.quantity.toFixed(3),
@@ -333,9 +333,9 @@ export async function updateInvoiceAction(id: number, formData: FormData): Promi
     await tx.delete(documentItems).where(eq(documentItems.documentId, id));
     if (input.items.length) {
       await tx.insert(documentItems).values(
-        input.items.map((it, idx) => ({
+        input.items.map((it) => ({
           documentId: id,
-          lineNo: idx + 1,
+          lineNo: it.lineNo ?? null,
           productCodeSnapshot: it.productCode ?? null,
           description: it.description,
           quantity: it.quantity.toFixed(3),

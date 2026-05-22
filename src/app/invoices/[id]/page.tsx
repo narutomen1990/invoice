@@ -169,9 +169,9 @@ export default async function InvoiceDetailPage({
                       </td>
                     </tr>
                   ) : (
-                    items.map((it) => (
-                      <tr key={it.lineNo} className="hover:bg-zinc-50">
-                        <td className="px-4 py-2 text-center text-zinc-500">{it.lineNo}</td>
+                    items.map((it, idx) => (
+                      <tr key={idx} className="hover:bg-zinc-50">
+                        <td className="px-4 py-2 text-center text-zinc-500">{it.lineNo ?? ""}</td>
                         <td className="px-4 py-2">
                           <div>{it.description ?? "-"}</div>
                           {it.productCode && (

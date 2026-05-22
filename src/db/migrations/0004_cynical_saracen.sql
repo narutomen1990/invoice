@@ -1,0 +1,1 @@
+ALTER TABLE "document_items" ALTER COLUMN "line_no" DROP NOT NULL;

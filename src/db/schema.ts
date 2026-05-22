@@ -365,7 +365,8 @@ export const documentItems = pgTable(
   {
     id: bigserial("id", { mode: "number" }).primaryKey(),
     documentId: bigint("document_id", { mode: "number" }).notNull().references(() => documents.id, { onDelete: "cascade" }),
-    lineNo: integer("line_no").notNull(),
+    // nullable — manual line numbers; blank = description-only line (no number printed)
+    lineNo: integer("line_no"),
     productId: bigint("product_id", { mode: "number" }).references(() => products.id),
     productCodeSnapshot: varchar("product_code_snapshot", { length: 30 }),
     description: text("description"),

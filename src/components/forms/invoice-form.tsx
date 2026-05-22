@@ -341,11 +341,13 @@ export function InvoiceForm({
 
     const validItems = items
       .filter((it) => it.description.trim())
-      .map((it, idx) => {
+      .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
+        // เว้นว่าง = ไม่มีเลขลำดับ (null) — จะไม่พิมพ์เลขในแถวนั้น
+        const ln = it.lineNo.trim() ? parseInt(it.lineNo, 10) : NaN;
         return {
-          lineNo: parseInt(it.lineNo, 10) || idx + 1,
+          lineNo: Number.isNaN(ln) ? null : ln,
           productCode: it.productCode || null,
           description: it.description,
           quantity: q,

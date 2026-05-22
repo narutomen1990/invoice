@@ -35,12 +35,13 @@ export function buildEtaxInvoiceXml(d: InvoiceDetail): string {
   const buyerBranch = (d.doc.customerBranch || "00000").padStart(5, "0").slice(-5);
 
   const lineXml = d.items
-    .map((it) => {
+    .map((it, idx) => {
       const lineExt = num(it.amount, 2);
       const qty = num(it.quantity, 4);
       const price = num(it.unitPrice, 4);
+      // e-Tax requires a line ID on every line — fall back to position when blank
       return `    <cac:InvoiceLine>
-      <cbc:ID>${esc(it.lineNo)}</cbc:ID>
+      <cbc:ID>${esc(String(it.lineNo ?? idx + 1))}</cbc:ID>
       <cbc:InvoicedQuantity unitCode="${esc(it.unit || "EA")}">${qty}</cbc:InvoicedQuantity>
       <cbc:LineExtensionAmount currencyID="THB">${lineExt}</cbc:LineExtensionAmount>
       <cac:Item>

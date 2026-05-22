@@ -449,9 +449,9 @@ export function InvoicePDF({ data, company }: { data: InvoiceDetail; company?: a
               <Text style={s.thEn}>AMOUNT</Text>
             </View>
           </View>
-          {items.map((it) => (
-            <View key={it.lineNo} style={s.tr}>
-              <Text style={[s.td, s.colNo]}>{it.lineNo}</Text>
+          {items.map((it, idx) => (
+            <View key={idx} style={s.tr}>
+              <Text style={[s.td, s.colNo]}>{it.lineNo ?? ""}</Text>
               <Text style={[s.td, s.colDesc]}>{it.description ?? ""}</Text>
               <Text style={[s.td, s.colQty]}>
                 {it.quantity ? formatMoney(it.quantity, it.quantity % 1 === 0 ? 0 : 2) : ""}

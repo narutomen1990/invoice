@@ -166,7 +166,7 @@ export type InvoiceDetail = {
     legacyRunning: string | null;
   };
   items: {
-    lineNo: number;
+    lineNo: number | null;
     productCode: string | null;
     description: string | null;
     quantity: number;
@@ -194,7 +194,7 @@ export async function getInvoiceById(id: number): Promise<InvoiceDetail | null> 
            unit_price::text, amount::text
       FROM document_items
      WHERE document_id = ${id}
-     ORDER BY line_no
+     ORDER BY id
   `);
 
   const compRaw = await db.execute<any>(sql`
@@ -242,7 +242,7 @@ export async function getInvoiceById(id: number): Promise<InvoiceDetail | null> 
       legacyRunning: d.legacy_running,
     },
     items: itemsRaw.map((i) => ({
-      lineNo: Number(i.line_no),
+      lineNo: i.line_no == null ? null : Number(i.line_no),
       productCode: i.product_code_snapshot,
       description: i.description,
       quantity: Number(i.quantity),
