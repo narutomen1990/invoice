@@ -58,7 +58,7 @@ export function ChangePasswordForm() {
           {error && (
             <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" variant="save" className="w-full" disabled={pending}>
             <KeyRound className="h-4 w-4" />
             {pending ? "กำลังบันทึก..." : "เปลี่ยนรหัสผ่าน"}
           </Button>

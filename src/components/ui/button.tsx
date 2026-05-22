@@ -1,7 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "outline" | "ghost" | "secondary" | "destructive";
+type Variant =
+  | "default"
+  | "outline"
+  | "ghost"
+  | "secondary"
+  | "destructive"
+  | "search"
+  | "save";
 type Size = "default" | "sm" | "lg" | "icon";
 
 const VARIANTS: Record<Variant, string> = {
@@ -10,6 +17,10 @@ const VARIANTS: Record<Variant, string> = {
   ghost: "hover:bg-zinc-100 text-zinc-700",
   secondary: "bg-zinc-100 text-zinc-900 hover:bg-zinc-200",
   destructive: "bg-red-600 text-white hover:bg-red-700",
+  // ปุ่มค้นหา — สีน้ำเงิน
+  search: "bg-blue-600 text-white hover:bg-blue-700",
+  // ปุ่มบันทึก — สีเขียวใบตองอ่อน
+  save: "bg-lime-500 text-white hover:bg-lime-600",
 };
 
 const SIZES: Record<Size, string> = {

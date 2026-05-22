@@ -293,9 +293,10 @@ export function CustomerForm({
         <div className="space-y-2">
           <Button
             type="button"
+            variant="save"
             onClick={() => onSubmit("back")}
             disabled={pending}
-            className="w-full justify-start bg-zinc-500 text-white hover:bg-zinc-600"
+            className="w-full justify-start"
           >
             <Save className="h-4 w-4" />
             {pending ? "กำลังบันทึก..." : "Save บันทึกทับ"}
@@ -303,9 +304,10 @@ export function CustomerForm({
           {mode === "new" && (
             <Button
               type="button"
+              variant="save"
               onClick={() => onSubmit("addAnother")}
               disabled={pending}
-              className="w-full justify-start bg-emerald-500 text-white hover:bg-emerald-600"
+              className="w-full justify-start"
             >
               <Plus className="h-4 w-4" />
               Save รายการเพิ่ม

@@ -493,6 +493,75 @@ export const documentJournalsRelations = relations(documentJournals, ({ one }) =
 }));
 
 // ============================================================
+// WITHHOLDING TAX CERTIFICATES (หนังสือรับรองการหักภาษี ณ ที่จ่าย - 50 ทวิ)
+// ============================================================
+export const withholdingCertificates = pgTable(
+  "withholding_certificates",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    docNo: varchar("doc_no", { length: 30 }).notNull(),
+    sequenceNo: integer("sequence_no").default(0).notNull(),
+    issueDate: date("issue_date").notNull(),
+
+    // หัวเอกสารตามแบบ 50 ทวิ
+    volumeNo: varchar("volume_no", { length: 20 }),         // เล่มที่
+    sequenceInForm: varchar("sequence_in_form", { length: 20 }), // ลำดับที่ ในแบบ
+
+    // ฟอร์มภาษี: pnd1a | pnd1a_special | pnd2 | pnd2a | pnd3 | pnd3a | pnd53
+    formType: varchar("form_type", { length: 20 }).notNull().default("pnd53"),
+
+    // ผู้มีหน้าที่หักภาษี ณ ที่จ่าย (payer / withholding agent)
+    payerName: text("payer_name").notNull(),
+    payerTaxId: varchar("payer_tax_id", { length: 13 }),
+    payerAddress: text("payer_address"),
+
+    // ผู้ถูกหักภาษี ณ ที่จ่าย (payee)
+    payeeName: text("payee_name").notNull(),
+    payeeTaxId: varchar("payee_tax_id", { length: 13 }),
+    payeeAddress: text("payee_address"),
+
+    // รายการเงินได้: [{ category, description, datePaid, amount, tax }]
+    items: jsonb("items").$type<
+      {
+        category: string;
+        description: string;
+        datePaid: string;
+        amount: number;
+        tax: number;
+      }[]
+    >(),
+
+    totalPaid: numeric("total_paid", { precision: 14, scale: 2 }).default("0").notNull(),
+    totalTax: numeric("total_tax", { precision: 14, scale: 2 }).default("0").notNull(),
+    totalTaxWords: text("total_tax_words"),
+
+    // เงื่อนไขการหัก: withhold | pay_always | pay_once | other
+    taxCondition: varchar("tax_condition", { length: 20 }).default("withhold").notNull(),
+    taxConditionOther: text("tax_condition_other"),
+
+    // กองทุน (optional)
+    pensionFund: numeric("pension_fund", { precision: 14, scale: 2 }),
+    pensionFundLicense: varchar("pension_fund_license", { length: 50 }), // ใบอนุญาตเลขที่
+    socialSecurity: numeric("social_security", { precision: 14, scale: 2 }),
+    employerAccountNo: varchar("employer_account_no", { length: 50 }), // เลขที่บัญชีนายจ้าง
+
+    note: text("note"),
+    status: varchar("status", { length: 16 }).default("issued").notNull(),
+
+    // พิมพ์ตราประทับบริษัทลงเอกสารหรือไม่
+    stampEnabled: boolean("stamp_enabled").default(false).notNull(),
+
+    createdByUserId: bigint("created_by_user_id", { mode: "number" }).references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("uniq_wht_doc_no").on(t.docNo),
+    index("idx_wht_issue_date").on(t.issueDate),
+  ],
+);
+
+// ============================================================
 // TYPE EXPORTS
 // ============================================================
 export type Company = typeof companies.$inferSelect;
@@ -503,8 +572,11 @@ export type DocumentItem = typeof documentItems.$inferSelect;
 export type DocumentJournal = typeof documentJournals.$inferSelect;
 export type User = typeof users.$inferSelect;
 
+export type WithholdingCertificate = typeof withholdingCertificates.$inferSelect;
+
 export type NewCompany = typeof companies.$inferInsert;
 export type NewCustomer = typeof customers.$inferInsert;
 export type NewProduct = typeof products.$inferInsert;
 export type NewDocument = typeof documents.$inferInsert;
 export type NewDocumentItem = typeof documentItems.$inferInsert;
+export type NewWithholdingCertificate = typeof withholdingCertificates.$inferInsert;

@@ -132,7 +132,7 @@ export function ProductForm({
         <Button variant="outline" onClick={() => router.back()}>
           ยกเลิก
         </Button>
-        <Button onClick={onSubmit} disabled={pending}>
+        <Button variant="save" onClick={onSubmit} disabled={pending}>
           <Save className="h-4 w-4" />
           {pending ? "กำลังบันทึก..." : mode === "new" ? "บันทึกใหม่" : "บันทึกการแก้ไข"}
         </Button>

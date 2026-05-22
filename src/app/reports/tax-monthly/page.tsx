@@ -178,7 +178,11 @@ export default async function TaxMonthlyPage({
                   ),
                 )}
               </Select>
-              <Button type="submit" className="col-span-4 md:col-span-2">
+              <Button
+                type="submit"
+                variant="search"
+                className="col-span-4 md:col-span-2"
+              >
                 แสดง
               </Button>
             </form>

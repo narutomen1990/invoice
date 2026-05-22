@@ -22,6 +22,13 @@
       "when": 1777915673897,
       "tag": "0002_closed_spectrum",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1779431236759,
+      "tag": "0003_little_deathbird",
+      "breakpoints": true
     }
   ]
 }

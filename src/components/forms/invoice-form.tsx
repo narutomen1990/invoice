@@ -861,7 +861,7 @@ export function InvoiceForm({
           onClick={() => onSubmit("back")}
           disabled={pending}
           title="บันทึกทับรายการเดิม"
-          className="group flex h-10 items-center justify-center gap-1.5 rounded-md border border-blue-700 bg-gradient-to-b from-blue-500 to-blue-600 px-2 text-sm font-semibold text-white shadow-sm transition active:translate-y-px active:shadow-inner hover:from-blue-600 hover:to-blue-700 disabled:opacity-50"
+          className="group flex h-10 items-center justify-center gap-1.5 rounded-md border border-lime-600 bg-lime-500 px-2 text-sm font-semibold text-white shadow-sm transition active:translate-y-px active:shadow-inner hover:bg-lime-600 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
           <span>Save (บันทึกทับ)</span>
@@ -872,7 +872,7 @@ export function InvoiceForm({
           onClick={() => onSubmit("addAnother")}
           disabled={pending}
           title={mode === "edit" ? "บันทึกเป็นใบกำกับใหม่ (ไม่ทับใบเดิม)" : "บันทึกเป็นรายการใหม่"}
-          className="group flex h-10 items-center justify-center gap-1.5 rounded-md border border-green-700 bg-gradient-to-b from-green-500 to-green-600 px-2 text-sm font-semibold text-white shadow-sm transition active:translate-y-px active:shadow-inner hover:from-green-600 hover:to-green-700 disabled:opacity-50"
+          className="group flex h-10 items-center justify-center gap-1.5 rounded-md border border-lime-600 bg-lime-500 px-2 text-sm font-semibold text-white shadow-sm transition active:translate-y-px active:shadow-inner hover:bg-lime-600 disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
           <span>Save (บันทึกเพิ่ม)</span>

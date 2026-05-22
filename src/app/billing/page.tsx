@@ -124,11 +124,7 @@ export default async function BillingPage({
                 placeholder="พิมพ์ชื่อลูกค้า / รหัส / เลขที่..."
                 className="h-8 max-w-sm bg-white"
               />
-              <Button
-                type="submit"
-                size="sm"
-                className="bg-cyan-600 hover:bg-cyan-700"
-              >
+              <Button type="submit" size="sm" variant="search">
                 ค้นหา
               </Button>
               {q && (

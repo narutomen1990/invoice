@@ -13,6 +13,7 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+.claude/settings.local.json
 
 etl/output/
 etl/snapshots/*.tar.gz
@@ -28,6 +29,8 @@ drizzle/
 *.sql
 *.sql.gz
 *.dump
+# ...but keep Drizzle migration files — they are the schema source of truth
+!src/db/migrations/*.sql
 
 # Untitled images / scratch files
 Untitled*.jpg

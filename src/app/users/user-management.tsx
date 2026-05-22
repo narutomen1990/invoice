@@ -268,7 +268,7 @@ function AddUserPanel({
         <button
           onClick={save}
           disabled={pending}
-          className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-blue-700/20 transition hover:from-blue-600 hover:to-blue-700 active:translate-y-px disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-lime-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-lime-600/30 transition hover:bg-lime-600 active:translate-y-px disabled:opacity-50"
         >
           <Save className="h-4 w-4" />
           {pending ? "กำลังบันทึก..." : "บันทึก"}
@@ -450,7 +450,7 @@ function EditUserDialog({
           <button
             onClick={save}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-blue-700/20 transition hover:from-blue-600 hover:to-blue-700 active:translate-y-px disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-lime-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-lime-600/30 transition hover:bg-lime-600 active:translate-y-px disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {pending ? "กำลังบันทึก..." : "บันทึก"}

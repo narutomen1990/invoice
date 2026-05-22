@@ -201,7 +201,7 @@ export function SettingsForm({ initial }: { initial: CompanyData | null }) {
             <X className="h-4 w-4" />
             รีเซ็ต
           </Button>
-          <Button onClick={onSubmit} disabled={pending}>
+          <Button variant="save" onClick={onSubmit} disabled={pending}>
             <Save className="h-4 w-4" />
             {pending ? "กำลังบันทึก..." : "บันทึกทั้งหมด"}
           </Button>

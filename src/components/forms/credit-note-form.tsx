@@ -842,18 +842,20 @@ export function CreditNoteForm({
         <div className="flex w-44 shrink-0 flex-col gap-2">
           <Button
             type="button"
+            variant="save"
             onClick={() => onSubmit("back")}
             disabled={pending}
-            className="w-full justify-start bg-zinc-500 text-white hover:bg-zinc-600"
+            className="w-full justify-start"
           >
             <Save className="h-4 w-4" />
             {pending ? "กำลังบันทึก..." : "Save บันทึกทับ"}
           </Button>
           <Button
             type="button"
+            variant="save"
             onClick={() => onSubmit("addAnother")}
             disabled={pending}
-            className="w-full justify-start bg-emerald-500 text-white hover:bg-emerald-600"
+            className="w-full justify-start"
           >
             <Save className="h-4 w-4" />
             Save รายการเพิ่ม

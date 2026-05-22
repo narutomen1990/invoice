@@ -745,7 +745,7 @@ export function BillingSlipForm({
             onClick={onSubmit}
             disabled={pending}
             title="บันทึกทับ"
-            className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-yellow-700 bg-gradient-to-b from-yellow-300 to-yellow-500 px-2 text-sm font-bold italic text-yellow-950 shadow-sm transition active:translate-y-px hover:from-yellow-400 hover:to-yellow-600 disabled:opacity-50"
+            className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-lime-600 bg-lime-500 px-2 text-sm font-bold italic text-white shadow-sm transition active:translate-y-px hover:bg-lime-600 disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             <span>Save บันทึกทับ</span>

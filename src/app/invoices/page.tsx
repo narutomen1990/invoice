@@ -154,11 +154,7 @@ export default async function InvoicesPage({
             placeholder="เลขที่ Invoice"
             className="h-8 bg-white font-mono text-[12px]"
           />
-          <Button
-            type="submit"
-            size="sm"
-            className="bg-amber-500 text-amber-950 hover:bg-amber-600"
-          >
+          <Button type="submit" size="sm" variant="search">
             ค้นหา
           </Button>
           {(q || code || period || docNo) && (

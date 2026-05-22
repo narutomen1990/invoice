@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getProductList } from "@/lib/queries/products";
 import { formatMoney } from "@/lib/thai/number";
+import { ProductRowActions } from "./product-row-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function ProductsPage({
             <p className="text-sm text-zinc-500">ทั้งหมด {rows.length.toLocaleString()} รายการ</p>
           </div>
           <Link href="/products/new">
-            <Button>
+            <Button className="bg-emerald-600 text-white hover:bg-emerald-700">
               <Plus className="h-4 w-4" />
               เพิ่มสินค้า
             </Button>
@@ -46,7 +47,7 @@ export default async function ProductsPage({
                   className="pl-9"
                 />
               </div>
-              <Button type="submit" className="col-span-2">
+              <Button type="submit" variant="search" className="col-span-2">
                 ค้นหา
               </Button>
             </form>
@@ -72,6 +73,7 @@ export default async function ProductsPage({
                       <th className="px-4 py-2.5 font-medium text-right">ขายไปกี่ใบ</th>
                       <th className="px-4 py-2.5 font-medium text-right">ยอดขายรวม</th>
                       <th className="px-4 py-2.5 font-medium">สถานะ</th>
+                      <th className="px-4 py-2.5 font-medium text-right">จัดการ</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -110,6 +112,9 @@ export default async function ProductsPage({
                           ) : (
                             <Badge variant="outline">ปิด</Badge>
                           )}
+                        </td>
+                        <td className="px-4 py-2">
+                          <ProductRowActions id={r.id} code={r.code} name={r.name} />
                         </td>
                       </tr>
                     ))}
