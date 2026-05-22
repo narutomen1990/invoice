@@ -417,7 +417,7 @@ export default async function WhtPrintPage({
 
   return (
     <>
-      <PrintActions docNo={wht.docNo} />
+      <PrintActions docNo={wht.docNo} id={wht.id} />
       <div className="sheet">
         <Copy wht={wht} copyNo={1} stampUrl={stampUrl} />
         <Copy wht={wht} copyNo={2} stampUrl={stampUrl} />

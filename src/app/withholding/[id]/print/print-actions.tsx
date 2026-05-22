@@ -1,13 +1,13 @@
 "use client";
 
-import { Printer, X, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Printer, X, ZoomIn, ZoomOut, Maximize, FileDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const MIN = 0.3;
 const MAX = 2;
 const STEP = 0.1;
 
-export function PrintActions({ docNo }: { docNo: string }) {
+export function PrintActions({ docNo, id }: { docNo: string; id: number }) {
   const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
@@ -33,6 +33,11 @@ export function PrintActions({ docNo }: { docNo: string }) {
         <Printer size={16} />
         พิมพ์
       </button>
+
+      <a href={`/api/withholding/${id}/pdf?download=1`} className="btn btn-pdf">
+        <FileDown size={16} />
+        PDF
+      </a>
 
       <div className="zoom-group">
         <button onClick={dec} className="btn btn-icon" title="ย่อ">
@@ -79,6 +84,8 @@ export function PrintActions({ docNo }: { docNo: string }) {
         .btn:hover { background: #f0f0f0; }
         .btn-primary { background: #18181b; color: #fff; border-color: #18181b; }
         .btn-primary:hover { background: #27272a; }
+        .btn-pdf { background: #dc2626; color: #fff; border-color: #dc2626; text-decoration: none; }
+        .btn-pdf:hover { background: #b91c1c; }
         .btn-icon { padding: 6px 9px; }
         .btn-zoom {
           min-width: 54px; justify-content: center;
