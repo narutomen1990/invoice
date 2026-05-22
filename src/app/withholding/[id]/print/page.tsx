@@ -437,8 +437,8 @@ export default async function WhtPrintPage({
         .copy {
           width: 148.5mm;
           min-height: 210mm;
-          /* ขอบบน-ล่าง 10mm กันเครื่องพิมพ์ตัดขอบ */
-          padding: 10mm 7mm;
+          /* ขอบบน-ล่าง 8mm กันเครื่องพิมพ์ตัดขอบ */
+          padding: 8mm 7mm;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
@@ -453,7 +453,7 @@ export default async function WhtPrintPage({
 
         .head {
           display: flex; justify-content: space-between;
-          align-items: flex-start; margin-bottom: 2mm;
+          align-items: flex-start; margin-bottom: 1mm;
         }
         .head-title { flex: 1; text-align: center; }
         .t1 { font-size: 13px; font-weight: 700; }
@@ -463,8 +463,8 @@ export default async function WhtPrintPage({
 
         .party {
           border: 1px solid #000;
-          padding: 1.6mm 2mm;
-          margin-bottom: 1.5mm;
+          padding: 1mm 2mm;
+          margin-bottom: 1mm;
         }
         .party-top {
           display: flex; justify-content: space-between;
@@ -475,8 +475,8 @@ export default async function WhtPrintPage({
           display: inline-flex; align-items: center; gap: 1mm;
           font-size: 6.5px; white-space: nowrap;
         }
-        .party-name { font-size: 9px; margin-top: 1mm; }
-        .party-addr { font-size: 7.8px; margin-top: 1mm; min-height: 3.5mm; }
+        .party-name { font-size: 9px; margin-top: 0.5mm; }
+        .party-addr { font-size: 7.8px; margin-top: 0.5mm; min-height: 3.5mm; }
         .hint { font-size: 6px; color: #555; font-style: italic; }
         .hint-c { text-align: center; margin: 0.4mm 0; }
 
@@ -514,7 +514,7 @@ export default async function WhtPrintPage({
 
         .inc { width: 100%; border-collapse: collapse; margin-top: 1.5mm; }
         .inc th, .inc td {
-          border: 1px solid #000; padding: 1mm 1mm;
+          border: 1px solid #000; padding: 0.4mm 1mm;
           font-size: 7px; vertical-align: top;
         }
         .inc th {
@@ -529,13 +529,13 @@ export default async function WhtPrintPage({
           border-top: none;
           border-bottom: none;
         }
-        .inc-desc { line-height: 1.25; }
+        .inc-desc { line-height: 1.15; }
         /* แถวรวม — ป้ายชิดขวา ตัวหนา เว้นช่องสูง */
         .inc-total {
           text-align: right; font-weight: 700;
-          font-size: 7px; padding: 1.2mm 1.5mm;
+          font-size: 7px; padding: 0.6mm 1.5mm;
         }
-        .inc tfoot .inc-amt { padding: 1.2mm 1mm; font-size: 7.5px; }
+        .inc tfoot .inc-amt { padding: 0.6mm 1mm; font-size: 7.5px; }
         .inc .b { font-weight: 700; }
 
         /* แถวตัวอักษร — ป้ายแคบ + กล่องคำกว้าง */
@@ -562,9 +562,9 @@ export default async function WhtPrintPage({
         .funds-box {
           border: 1px solid #000;
           border-top: none;
-          padding: 1.8mm 2mm;
+          padding: 1.2mm 2mm;
           font-size: 6.8px;
-          line-height: 2;
+          line-height: 1.55;
         }
         .funds-line {
           display: flex; justify-content: space-between; gap: 3mm;
@@ -601,7 +601,7 @@ export default async function WhtPrintPage({
         .cond-label { font-weight: 700; margin-bottom: 1.2mm; }
         .cond-opt {
           display: flex; align-items: center; gap: 1mm;
-          margin-bottom: 1.5mm;
+          margin-bottom: 0.8mm;
         }
         .foot-certify {
           flex: 1;
@@ -615,7 +615,7 @@ export default async function WhtPrintPage({
           display: flex; align-items: center; justify-content: center;
           padding: 1mm;
         }
-        .sign-line { font-size: 7.5px; margin-top: 9mm; }
+        .sign-line { font-size: 7.5px; margin-top: 4mm; }
         .sign-date { font-size: 7px; margin-top: 1mm; }
         .sign-hint { font-size: 6px; color: #555; }
         .sign-issued { font-size: 7px; margin-top: 1mm; color: #333; }
@@ -625,7 +625,7 @@ export default async function WhtPrintPage({
           display: flex; gap: 3mm;
           margin-top: auto; padding-top: 1.5mm;
           font-size: 6.3px;
-          line-height: 1.45; color: #333;
+          line-height: 1.3; color: #333;
         }
         .warn { width: 34%; }
         .remark { flex: 1; }
