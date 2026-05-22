@@ -60,6 +60,10 @@ export async function GET(
     });
     await page.emulateMediaType("print");
     await page.goto(targetUrl, { waitUntil: "networkidle0", timeout: 30000 });
+    // make sure bundled Sarabun is fully applied before snapshotting the PDF
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
     // CSS @page (A4, margin 0) คุมขนาดเอง — ห้ามใส่ margin ซ้ำ
     // ไม่งั้นพื้นที่พิมพ์จะเล็กลง ฟอร์ม 210mm จะล้น
     const pdf = await page.pdf({

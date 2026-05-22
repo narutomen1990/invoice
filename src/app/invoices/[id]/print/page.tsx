@@ -31,7 +31,9 @@ async function loadImageBase64(p: string | null | undefined): Promise<string | n
 
 export const dynamic = "force-dynamic";
 
-const TARGET_ROWS = 14;
+// 12 keeps the items table substantial while leaving ~15 mm of A4 headroom,
+// so a wrapped description line or renderer drift never spills to a 2nd page.
+const TARGET_ROWS = 12;
 
 function branchLabel(code: string | null): string {
   if (!code) return "";
