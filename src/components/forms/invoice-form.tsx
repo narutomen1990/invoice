@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Trash2, Save, AlertCircle, X, Printer, FileSpreadsheet,
+  Stamp, Check,
 } from "lucide-react";
 import { Input, Select } from "@/components/ui/input";
 import { formatMoney, bahtText } from "@/lib/thai/number";
@@ -975,20 +976,25 @@ export function InvoiceForm({
           </label>
         </div>
 
-        {/* Stamp toggle box */}
-        <div className="flex flex-col gap-1 rounded border border-zinc-300 bg-white p-2 text-[11px]">
-          <div className="mb-0.5 text-[10.5px] font-semibold text-zinc-700">
-            ตราประทับบริษัท
-          </div>
-          <label className="flex cursor-pointer items-center gap-1.5">
-            <input
-              type="checkbox"
-              checked={stampEnabled}
-              onChange={(e) => setStampEnabled(e.target.checked)}
-            />
-            พิมพ์ตราประทับลงเอกสาร
-          </label>
-        </div>
+        {/* Stamp toggle — same button style as /withholding/new */}
+        <button
+          type="button"
+          onClick={() => setStampEnabled(!stampEnabled)}
+          title="ใช้ตราประทับจากหน้า ตั้งค่า (Settings)"
+          className={
+            "inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-bold transition active:translate-y-px " +
+            (stampEnabled
+              ? "border-lime-600 bg-lime-500 text-white shadow-sm hover:bg-lime-600"
+              : "border-zinc-300 bg-zinc-100 text-zinc-500 hover:bg-zinc-200")
+          }
+        >
+          {stampEnabled ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Stamp className="h-4 w-4" />
+          )}
+          {stampEnabled ? "ใช้ตราประทับ" : "ไม่ใช้ตราประทับ"}
+        </button>
 
         <div className="h-[80px]" aria-hidden="true" />
 
