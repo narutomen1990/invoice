@@ -79,6 +79,7 @@ export default async function EditCreditNotePage({
     correctAmount: cnLegacy.correctAmount ?? 0,
     vatRate: doc.vatRate,
     items: items.map((it) => ({
+      lineNo: it.lineNo,
       productCode: it.productCode ?? "",
       description: it.description ?? "",
       quantity: it.quantity,

@@ -48,7 +48,7 @@ async function loadQuotation(id: number) {
            unit_price::text, amount::text
       FROM document_items
      WHERE document_id = ${id}
-     ORDER BY line_no
+     ORDER BY id
   `);
 
   return { doc: d, items: itemsRaw };
@@ -295,13 +295,13 @@ export default async function QuotationPrintPage({
             </tr>
           </thead>
           <tbody>
-            {items.map((it: any) => {
+            {items.map((it: any, idx: number) => {
               const qty = Number(it.quantity);
               const price = Number(it.unit_price);
               const amt = Number(it.amount);
               return (
-                <tr key={it.line_no}>
-                  <td className="ctr">{it.line_no}</td>
+                <tr key={idx}>
+                  <td className="ctr">{it.line_no ?? ""}</td>
                   <td>{it.description ?? ""}</td>
                   <td className="ctr">
                     {qty ? formatMoney(qty, qty % 1 === 0 ? 0 : 2) : ""}

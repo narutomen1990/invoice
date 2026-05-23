@@ -27,6 +27,7 @@ type Customer = {
 };
 
 type ItemRow = {
+  lineNo: string;
   productCode: string;
   description: string;
   quantity: string;
@@ -73,6 +74,7 @@ export type BillingSlipFormInitial = {
 };
 
 const EMPTY_ROW: ItemRow = {
+  lineNo: "",
   productCode: "",
   description: "",
   quantity: "1",
@@ -244,7 +246,10 @@ export function BillingSlipForm({
       .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
+        // เว้นว่าง = ไม่มีเลขลำดับ (null) — จะไม่พิมพ์เลขในแถวนั้น
+        const ln = it.lineNo.trim() ? parseInt(it.lineNo, 10) : NaN;
         return {
+          lineNo: Number.isNaN(ln) ? null : ln,
           productCode: it.productCode || null,
           description: it.description || it.invoiceNo || "-",
           quantity: q,
@@ -532,8 +537,13 @@ export function BillingSlipForm({
                   const vat = +((amt * (parseFloat(vatRate) || 0)) / 100).toFixed(2);
                   return (
                     <tr key={i} className="hover:bg-sky-50">
-                      <td className="border border-sky-200 px-1 text-center text-zinc-600">
-                        {i + 1}
+                      <td className="border border-sky-200 p-0">
+                        <Input
+                          value={row.lineNo}
+                          onChange={(e) => updateItem(i, "lineNo", e.target.value)}
+                          placeholder={String(i + 1)}
+                          className="h-7 w-full border-0 bg-transparent text-center text-[11px] tabular-nums focus:ring-0"
+                        />
                       </td>
                       <td className="border border-sky-200 p-0">
                         <Input

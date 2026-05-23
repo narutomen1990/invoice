@@ -10,6 +10,7 @@ import { reserveNextDocNo, useCustomDocNo } from "@/lib/counter";
 import { bahtText } from "@/lib/thai/number";
 
 const ItemInput = z.object({
+  lineNo: z.coerce.number().int().min(0).nullable().optional(),
   productCode: z.string().nullable().optional(),
   description: z.string().min(1, "กรุณากรอกรายการ"),
   quantity: z.coerce.number().min(0).default(1),
@@ -208,9 +209,9 @@ export async function createBillingSlipAction(
 
       if (input.items.length) {
         await tx.insert(documentItems).values(
-          input.items.map((it, idx) => ({
+          input.items.map((it) => ({
             documentId: doc.id,
-            lineNo: idx + 1,
+            lineNo: it.lineNo ?? null,
             productCodeSnapshot: it.productCode ?? null,
             description: it.description,
             quantity: it.quantity.toFixed(3),
@@ -309,9 +310,9 @@ export async function updateBillingSlipAction(
     await tx.delete(documentItems).where(eq(documentItems.documentId, id));
     if (input.items.length) {
       await tx.insert(documentItems).values(
-        input.items.map((it, idx) => ({
+        input.items.map((it) => ({
           documentId: id,
-          lineNo: idx + 1,
+          lineNo: it.lineNo ?? null,
           productCodeSnapshot: it.productCode ?? null,
           description: it.description,
           quantity: it.quantity.toFixed(3),

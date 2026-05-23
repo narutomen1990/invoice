@@ -34,7 +34,7 @@ async function getQuotationForEdit(id: number) {
            unit_price::text, amount::text
       FROM document_items
      WHERE document_id = ${id}
-     ORDER BY line_no
+     ORDER BY id
   `);
 
   return { doc: d, items: itemsRaw };
@@ -116,6 +116,7 @@ export default async function EditQuotationPage({
             remark1: doc.remark1,
             remark2: doc.remark2,
             items: items.map((it: any) => ({
+              lineNo: it.line_no == null ? "" : String(it.line_no),
               productCode: it.product_code_snapshot ?? "",
               description: it.description ?? "",
               quantity: String(it.quantity),

@@ -266,9 +266,9 @@ export default async function PrintBillingPage({
               </tr>
             </thead>
             <tbody>
-              {items.map((it) => (
-                <tr key={it.lineNo}>
-                  <td className="ctr">{it.lineNo}</td>
+              {items.map((it, idx) => (
+                <tr key={idx}>
+                  <td className="ctr">{it.lineNo ?? ""}</td>
                   <td>{it.description ?? ""}</td>
                   <td className="ctr">
                     {it.quantity

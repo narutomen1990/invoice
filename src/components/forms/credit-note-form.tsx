@@ -35,6 +35,7 @@ type Product = {
 };
 
 type ItemRow = {
+  lineNo: string;
   productCode: string;
   description: string;
   quantity: string;
@@ -43,6 +44,7 @@ type ItemRow = {
 };
 
 const EMPTY_ROW: ItemRow = {
+  lineNo: "",
   productCode: "",
   description: "",
   quantity: "1",
@@ -75,6 +77,7 @@ export type CreditNoteFormInitial = {
   correctAmount: number;
   vatRate: number;
   items: {
+    lineNo?: number | null;
     productCode: string;
     description: string;
     quantity: number;
@@ -165,6 +168,7 @@ export function CreditNoteForm({
   const [items, setItems] = useState<ItemRow[]>(
     fillRows(
       initial?.items.map((it) => ({
+        lineNo: it.lineNo == null ? "" : String(it.lineNo),
         productCode: it.productCode,
         description: it.description,
         quantity: String(it.quantity),
@@ -291,7 +295,10 @@ export function CreditNoteForm({
       .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
+        // เว้นว่าง = ไม่มีเลขลำดับ (null) — จะไม่พิมพ์เลขในแถวนั้น
+        const ln = it.lineNo.trim() ? parseInt(it.lineNo, 10) : NaN;
         return {
+          lineNo: Number.isNaN(ln) ? null : ln,
           productCode: it.productCode || null,
           description: it.description,
           quantity: q,
@@ -305,6 +312,7 @@ export function CreditNoteForm({
     if (validItems.length === 0) {
       const adj = totals.adjusted;
       validItems.push({
+        lineNo: null,
         productCode: null,
         description: reason || "ปรับปรุงตามใบลดหนี้",
         quantity: 1,
@@ -663,8 +671,13 @@ export function CreditNoteForm({
                           ))}
                         </Select>
                       </td>
-                      <td className="border border-sky-200 px-1 text-center text-[11px] text-zinc-600">
-                        {i + 1}
+                      <td className="border border-sky-200 p-0">
+                        <Input
+                          value={row.lineNo}
+                          onChange={(e) => updateItem(i, "lineNo", e.target.value)}
+                          placeholder={String(i + 1)}
+                          className="h-7 w-full border-0 bg-transparent text-center text-[11px] tabular-nums focus:ring-0"
+                        />
                       </td>
                       <td className="border border-sky-200 p-0">
                         <Input
