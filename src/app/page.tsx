@@ -6,8 +6,6 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  FileSpreadsheet,
-  Eye,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,22 +39,11 @@ export default async function HomePage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-sm text-zinc-500">
-              สรุปยอดล่าสุด ณ เดือน {s.current.monthLabel || "-"}
-            </p>
-          </div>
-          <Link
-            href="/quotations/new"
-            className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 hover:bg-amber-100"
-            title="ดูแบบฟอร์มใบเสนอราคาใหม่"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            <Eye className="h-3.5 w-3.5" />
-            ดูแบบฟอร์มใบเสนอราคา
-          </Link>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-sm text-zinc-500">
+            สรุปยอดล่าสุด ณ เดือน {s.current.monthLabel || "-"}
+          </p>
         </div>
 
         {/* ===== Top KPI cards ===== */}
