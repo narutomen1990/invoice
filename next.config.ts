@@ -6,10 +6,12 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     serverActions: {
-      bodySizeLimit: "10mb",
+      // up to 100mb so /backup can accept the FoxPro Invoice.DBF
+      // (~40 mb today, grows over time)
+      bodySizeLimit: "100mb",
     },
   },
-  serverExternalPackages: ["@react-pdf/renderer", "puppeteer"],
+  serverExternalPackages: ["@react-pdf/renderer", "puppeteer", "dbffile"],
 };
 
 export default nextConfig;

@@ -301,10 +301,16 @@ async function migrateDocuments(
     const customerCode = s(rec.NAME);
     const customerId = customerCode ? customerCodeToId.get(customerCode) ?? null : null;
 
+    // FoxPro packs credit notes into the same Invoice.DBF via TYPE=3
+    // (doc_no prefix CN). Route them to the credit_note document type so
+    // /credit-notes and the tax report see them correctly.
+    const isCreditNote =
+      String(rec.TYPE ?? "").trim() === "3" || docNo.startsWith("CN");
+
     const [doc] = await db
       .insert(documents)
       .values({
-        documentType: "invoice",
+        documentType: isCreditNote ? "credit_note" : "invoice",
         docNo,
         internalSeq: s(rec.RUNNING),
         docDate,

@@ -1,10 +1,12 @@
 "use server";
 
-import { mkdir, readdir, stat, unlink } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, stat, unlink, writeFile } from "node:fs/promises";
+import os from "node:os";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
+import { importInvoicesFromDbf, type ImportResult } from "@/lib/etl/import-invoices";
 
 const BACKUP_DIR = process.env.BACKUP_DIR || path.join(process.cwd(), "backups");
 
@@ -104,4 +106,41 @@ export async function deleteBackupAction(filename: string): Promise<{ error?: st
 
 export async function getBackupDirAction(): Promise<string> {
   return BACKUP_DIR;
+}
+
+/**
+ * Import NEW invoices from an uploaded FoxPro Invoice.DBF (+ optional .FPT).
+ * Skips invoices whose doc_no is already present. Other tables are untouched.
+ */
+export async function importInvoicesFromFoxProAction(
+  formData: FormData,
+): Promise<{ error?: string; ok?: boolean; result?: ImportResult }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") return { error: "เฉพาะ admin เท่านั้น" };
+
+  const dbfFile = formData.get("dbf");
+  const fptFile = formData.get("fpt");
+  if (!(dbfFile instanceof File) || dbfFile.size === 0) {
+    return { error: "กรุณาเลือกไฟล์ Invoice.DBF" };
+  }
+
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "invoice-dbf-import-"));
+  const basePath = path.join(tmpDir, "Invoice");
+  try {
+    await writeFile(`${basePath}.DBF`, Buffer.from(await dbfFile.arrayBuffer()));
+    if (fptFile instanceof File && fptFile.size > 0) {
+      await writeFile(`${basePath}.FPT`, Buffer.from(await fptFile.arrayBuffer()));
+    }
+    const result = await importInvoicesFromDbf(`${basePath}.DBF`);
+    revalidatePath("/backup");
+    revalidatePath("/invoices");
+    revalidatePath("/");
+    return { ok: true, result };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: `Import ไม่สำเร็จ: ${msg}` };
+  } finally {
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+  }
 }

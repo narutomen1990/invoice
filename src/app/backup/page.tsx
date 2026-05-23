@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/session";
 import { listBackupsAction, getBackupDirAction } from "./actions";
 import { BackupActions } from "./backup-actions";
+import { ImportInvoicesCard } from "./import-invoices-card";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,19 @@ export default async function BackupPage() {
                   createdAt: b.createdAt,
                 }))}
               />
+            </CardContent>
+          </Card>
+        )}
+
+        {isAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">
+                นำเข้าใบกำกับใหม่จาก FoxPro (Invoice.DBF)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ImportInvoicesCard />
             </CardContent>
           </Card>
         )}
