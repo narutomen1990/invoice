@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/thai/number";
 import {
   createCreditNoteAction,
+  updateCreditNoteAction,
   checkCreditNoteNoAvailableAction,
 } from "@/app/credit-notes/actions";
 import { CreditNotePrintPickerDialog } from "@/components/forms/credit-note-print-picker";
@@ -88,12 +89,18 @@ export function CreditNoteForm({
   previewDocNo,
   initialDocDate,
   initial,
+  mode = "new",
+  editId,
+  existingDocNo,
 }: {
   customers: Customer[];
   products: Product[];
   previewDocNo: string;
   initialDocDate: string;
   initial?: CreditNoteFormInitial;
+  mode?: "new" | "edit";
+  editId?: number;
+  existingDocNo?: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +116,9 @@ export function CreditNoteForm({
   const [docDate, setDocDate] = useState(initialDocDate);
   const [dueDate, setDueDate] = useState("");
   const [terms, setTerms] = useState(0);
-  const [docNo, setDocNo] = useState(previewDocNo);
+  const [docNo, setDocNo] = useState(
+    mode === "edit" ? existingDocNo ?? previewDocNo : previewDocNo,
+  );
   const [docNoCheck, setDocNoCheck] = useState<{
     state: "idle" | "checking" | "ok" | "dup" | "invalid";
     msg?: string;
@@ -310,7 +319,11 @@ export function CreditNoteForm({
 
   function onSubmit(thenAction: "back" | "addAnother" | "print") {
     setError(null);
-    if (docNoCheck.state === "dup" || docNoCheck.state === "invalid") {
+    // in edit mode the docNo is fixed (existing) — skip the duplicate check
+    if (
+      mode !== "edit" &&
+      (docNoCheck.state === "dup" || docNoCheck.state === "invalid")
+    ) {
       setError(`เลขที่เอกสาร: ${docNoCheck.msg}`);
       return;
     }
@@ -324,12 +337,19 @@ export function CreditNoteForm({
     }
     const fd = buildFormData();
     startTransition(async () => {
-      const res = await createCreditNoteAction(fd);
+      const res =
+        mode === "edit" && editId
+          ? await updateCreditNoteAction(editId, fd)
+          : await createCreditNoteAction(fd);
       if (res?.error) {
         setError(res.error);
         return;
       }
-      setSavedToast("บันทึกใบลดหนี้เรียบร้อยแล้ว");
+      setSavedToast(
+        mode === "edit"
+          ? "แก้ไขใบลดหนี้เรียบร้อยแล้ว"
+          : "บันทึกใบลดหนี้เรียบร้อยแล้ว",
+      );
       if (thenAction === "addAnother") {
         setCustomerId(null);
         setCustomerCode("");
@@ -494,13 +514,16 @@ export function CreditNoteForm({
                     docNoTouched.current = true;
                     setDocNo(e.target.value);
                   }}
+                  readOnly={mode === "edit"}
                   className={`h-7 text-center font-mono font-semibold ${
-                    docNoCheck.state === "dup" ||
-                    docNoCheck.state === "invalid"
-                      ? "border-red-400 bg-red-50"
-                      : docNoCheck.state === "ok"
-                        ? "border-green-400 bg-green-50"
-                        : "bg-yellow-50"
+                    mode === "edit"
+                      ? "border-zinc-300 bg-zinc-100 text-zinc-700"
+                      : docNoCheck.state === "dup" ||
+                          docNoCheck.state === "invalid"
+                        ? "border-red-400 bg-red-50"
+                        : docNoCheck.state === "ok"
+                          ? "border-green-400 bg-green-50"
+                          : "bg-yellow-50"
                   }`}
                   placeholder="CN69/05-00001"
                 />

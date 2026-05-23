@@ -258,6 +258,123 @@ export async function createCreditNoteAction(
   return { ok: true, id: result.id, docNo: result.docNo };
 }
 
+export async function updateCreditNoteAction(
+  id: number,
+  formData: FormData,
+): Promise<{ error?: string; ok?: boolean; id?: number; docNo?: string }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+
+  let input: CreditNoteInputData;
+  try {
+    input = parseInput(formData);
+  } catch (e: any) {
+    const msg = e?.errors?.[0]?.message ?? e?.message ?? "ข้อมูลไม่ถูกต้อง";
+    return { error: msg };
+  }
+
+  const totals = computeTotals(input);
+
+  try {
+    await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ status: documents.status, docNo: documents.docNo })
+        .from(documents)
+        .where(
+          and(eq(documents.id, id), eq(documents.documentType, "credit_note")),
+        )
+        .limit(1);
+      if (!existing) throw new Error("ไม่พบใบลดหนี้นี้");
+      if (existing.status === "cancelled")
+        throw new Error("ใบที่ยกเลิกแล้ว แก้ไขไม่ได้");
+
+      const { customerId, customerCode } = await ensureCustomer(tx, input);
+
+      const reasonAndRef = [
+        input.referenceInvoiceNo
+          ? `อ้างถึงใบกำกับเลขที่ ${input.referenceInvoiceNo}${
+              input.referenceInvoiceDate
+                ? ` ลงวันที่ ${input.referenceInvoiceDate}`
+                : ""
+            }`
+          : null,
+        input.reason ? `สาเหตุ: ${input.reason}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      await tx
+        .update(documents)
+        .set({
+          docDate: input.docDate,
+          customerId,
+          customerCodeSnapshot: customerCode,
+          customerNameSnapshot: input.customerName,
+          customerTaxIdSnapshot: input.customerTaxId ?? null,
+          customerBranchSnapshot: input.customerBranch ?? null,
+          customerAddressSnapshot: input.customerAddress ?? null,
+          customerTelSnapshot: input.customerTel ?? null,
+          customerProvinceSnapshot: input.customerProvince ?? null,
+          salemanName: input.salemanName ?? null,
+          referenceQuotationNo: input.referenceInvoiceNo ?? null,
+          subtotal: totals.subtotal,
+          discount: "0.00",
+          amountBeforeVat: totals.amountBeforeVat,
+          vatRate: input.vatRate.toFixed(2),
+          vatAmount: totals.vatAmount,
+          total: totals.total,
+          netTotal: totals.total,
+          totalInWordsTh: bahtText(Number(totals.total)),
+          memo: input.memo ?? reasonAndRef,
+          remark1: input.remark1 ?? null,
+          remark2: input.reason,
+          legacyData: {
+            creditNote: {
+              originalAmount: Number(input.originalAmount) || 0,
+              correctAmount: Number(input.correctAmount) || 0,
+              referenceInvoiceNo: input.referenceInvoiceNo ?? null,
+              referenceInvoiceDate: input.referenceInvoiceDate ?? null,
+              reason: input.reason,
+            },
+          },
+          updatedByUserId: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(documents.id, id));
+
+      // replace items
+      await tx.delete(documentItems).where(eq(documentItems.documentId, id));
+      if (input.items.length) {
+        await tx.insert(documentItems).values(
+          input.items.map((it, idx) => ({
+            documentId: id,
+            lineNo: idx + 1,
+            productCodeSnapshot: it.productCode ?? null,
+            description: it.description,
+            quantity: it.quantity.toFixed(3),
+            unit: it.unit ?? null,
+            unitPrice: it.unitPrice.toFixed(2),
+            amount: it.amount.toFixed(2),
+          })),
+        );
+      }
+
+      await writeJournal(tx as any, {
+        documentId: id,
+        action: "update",
+        user: session,
+        changes: { total: totals.total, itemCount: input.items.length },
+      });
+    });
+  } catch (e: any) {
+    return { error: e?.message ?? "บันทึกไม่สำเร็จ" };
+  }
+
+  revalidatePath(`/credit-notes`);
+  revalidatePath(`/credit-notes/${id}`);
+  return { ok: true, id };
+}
+
 export async function previewNextCreditNoteNoAction(
   docDateBE: string,
 ): Promise<{ docNo: string }> {
