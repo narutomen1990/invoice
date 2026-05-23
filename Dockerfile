@@ -71,6 +71,10 @@ COPY --from=builder --chown=nextjs:nodejs ${PUPPETEER_CACHE} ${PUPPETEER_CACHE}
 # Uploads dir
 RUN mkdir -p /app/public/uploads/signatures && chown -R nextjs:nodejs /app/public/uploads
 
+# Backups dir (pg_dump output from /backup UI). Mounted as a volume in
+# docker-compose so backups persist across container rebuilds.
+RUN mkdir -p /app/backups && chown -R nextjs:nodejs /app/backups
+
 USER nextjs
 EXPOSE 3000
 

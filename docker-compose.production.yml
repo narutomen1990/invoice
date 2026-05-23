@@ -53,6 +53,7 @@ services:
       TZ: Asia/Bangkok
     volumes:
       - invoice_uploads:/app/public/uploads
+      - invoice_backups:/app/backups
     networks:
       - invoice_internal       # ภายในระหว่าง app ↔ db
       - traefik_proxy          # network ของ Traefik (ตรงกับ pattern ของ service-center)
@@ -74,6 +75,8 @@ volumes:
     name: invoice_pgdata
   invoice_uploads:
     name: invoice_uploads
+  invoice_backups:
+    name: invoice_backups
 
 networks:
   # network ภายในระหว่าง app ↔ db (ไม่ expose ออกข้างนอก)
