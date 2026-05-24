@@ -127,7 +127,7 @@ function rowFromInput(d: z.infer<typeof WhtSchema>) {
 
 export async function createWithholdingAction(
   formData: FormData,
-): Promise<{ error?: string; ok?: boolean; id?: number }> {
+): Promise<{ error?: string; ok?: boolean; id?: number; docNo?: string }> {
   const session = await getSession();
   if (!session) return { error: "session หมดอายุ" };
 
@@ -155,10 +155,10 @@ export async function createWithholdingAction(
           createdByUserId: session.userId,
         })
         .returning({ id: withholdingCertificates.id });
-      return { id: row.id };
+      return { id: row.id, docNo };
     });
     revalidatePath("/withholding");
-    return { ok: true, id: result.id };
+    return { ok: true, id: result.id, docNo: result.docNo };
   } catch (e: any) {
     if (e?.code === "23505") {
       return { error: `เลขที่เอกสาร "${customDocNo}" ซ้ำในระบบ` };
@@ -170,7 +170,7 @@ export async function createWithholdingAction(
 export async function updateWithholdingAction(
   id: number,
   formData: FormData,
-): Promise<{ error?: string; ok?: boolean; id?: number }> {
+): Promise<{ error?: string; ok?: boolean; id?: number; docNo?: string }> {
   const session = await getSession();
   if (!session) return { error: "session หมดอายุ" };
 

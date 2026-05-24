@@ -96,21 +96,25 @@ function IncomeRow({
   );
 }
 
+const COPY_TEXTS: Record<1 | 2 | 3 | 4, string> = {
+  1: "ฉบับที่ 1 (สำหรับผู้ถูกหักภาษี ณ ที่จ่าย ใช้แนบพร้อมกับแบบแสดงรายการภาษี)",
+  2: "ฉบับที่ 2 (สำหรับผู้ถูกหักภาษี ณ ที่จ่าย เก็บไว้เป็นหลักฐาน)",
+  3: "ฉบับที่ 3 (สำหรับผู้ถูกหักภาษี ณ ที่จ่าย ใช้แนบแสดงรายการภาษี)",
+  4: "ฉบับที่ 4 (สำเนาติดเล่ม สำหรับผู้หักภาษี ณ ที่จ่ายเก็บไว้เป็นหลักฐาน)",
+};
+
 function Copy({
   wht,
   copyNo,
   stampUrl,
 }: {
   wht: WhtDetail;
-  copyNo: 1 | 2;
+  copyNo: 1 | 2 | 3 | 4;
   stampUrl: string | null;
 }) {
   const agg = aggregate(wht);
   const alphaTax = wht.totalTaxWords?.trim() || bahtText(wht.totalTax);
-  const copyText =
-    copyNo === 1
-      ? "ฉบับที่ 1 (สำหรับผู้ถูกหักภาษี ณ ที่จ่าย ใช้แนบพร้อมกับแบบแสดงรายการภาษี)"
-      : "ฉบับที่ 2 (สำหรับผู้ถูกหักภาษี ณ ที่จ่าย เก็บไว้เป็นหลักฐาน)";
+  const copyText = COPY_TEXTS[copyNo];
 
   return (
     <div className="copy">
@@ -399,10 +403,13 @@ function Copy({
 
 export default async function WhtPrintPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
   const wht = await getWithholdingById(numId);
@@ -415,13 +422,28 @@ export default async function WhtPrintPage({
     stampUrl = await loadImageBase64(sigs.stamp.path);
   }
 
+  // ?copies=12 → แค่ฉบับ 1+2 / =34 → แค่ฉบับ 3+4 / ไม่ใส่ → ทั้ง 4 ฉบับ (2 แผ่น)
+  const copiesParam = sp.copies;
+  type Pair = [1 | 2 | 3 | 4, 1 | 2 | 3 | 4];
+  const sheets: Pair[] =
+    copiesParam === "12"
+      ? [[1, 2]]
+      : copiesParam === "34"
+        ? [[3, 4]]
+        : [
+            [1, 2],
+            [3, 4],
+          ];
+
   return (
     <>
       <PrintActions docNo={wht.docNo} id={wht.id} />
-      <div className="sheet">
-        <Copy wht={wht} copyNo={1} stampUrl={stampUrl} />
-        <Copy wht={wht} copyNo={2} stampUrl={stampUrl} />
-      </div>
+      {sheets.map(([a, b], idx) => (
+        <div className="sheet" key={idx}>
+          <Copy wht={wht} copyNo={a} stampUrl={stampUrl} />
+          <Copy wht={wht} copyNo={b} stampUrl={stampUrl} />
+        </div>
+      ))}
 
       <style>{`
         :root { color-scheme: light; }
@@ -661,6 +683,8 @@ export default async function WhtPrintPage({
           body { background: #fff; }
           /* zoom จากหน้าจอต้องไม่กระทบการพิมพ์จริง */
           .sheet { margin: 0; box-shadow: none; transform: none !important; }
+          /* แต่ละ .sheet = หนึ่งหน้ากระดาษ A4 (ใบที่ 2 ขึ้นหน้าใหม่) */
+          .sheet + .sheet { page-break-before: always; }
           @page { size: A4 landscape; margin: 0; }
         }
       `}</style>

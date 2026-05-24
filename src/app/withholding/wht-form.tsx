@@ -27,6 +27,7 @@ import {
   type WhtItem,
 } from "@/lib/withholding/constants";
 import { createWithholdingAction, updateWithholdingAction } from "./actions";
+import { WithholdingPrintPickerDialog } from "@/components/forms/withholding-print-picker";
 
 export type WhtFormInitial = {
   id?: number;
@@ -74,6 +75,10 @@ export function WhtForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [printPicker, setPrintPicker] = useState<{
+    id: number;
+    docNo: string;
+  } | null>(null);
 
   const [issueDate, setIssueDate] = useState(initial.issueDate);
   const [volumeNo, setVolumeNo] = useState(initial.volumeNo);
@@ -179,7 +184,7 @@ export function WhtForm({
     return fd;
   }
 
-  function onSubmit(thenPrint: boolean) {
+  function onSubmit(thenAction: "back" | "print") {
     setError(null);
     const fd = buildFormData();
     startTransition(async () => {
@@ -192,8 +197,10 @@ export function WhtForm({
         return;
       }
       const id = res.id ?? initial.id;
-      if (thenPrint && id) {
-        window.open(`/withholding/${id}/print`, "_blank");
+      if (thenAction === "print" && id) {
+        // open the picker — user chooses which copies/format to print
+        setPrintPicker({ id, docNo: res.docNo ?? initial.docNo ?? "" });
+        return;
       }
       router.push("/withholding");
       router.refresh();
@@ -528,7 +535,7 @@ export function WhtForm({
         <Button
           type="button"
           variant="save"
-          onClick={() => onSubmit(false)}
+          onClick={() => onSubmit("back")}
           disabled={pending}
         >
           <Save className="h-4 w-4" />
@@ -537,13 +544,25 @@ export function WhtForm({
         <Button
           type="button"
           variant="search"
-          onClick={() => onSubmit(true)}
+          onClick={() => onSubmit("print")}
           disabled={pending}
         >
           <Printer className="h-4 w-4" />
-          บันทึก + พิมพ์
+          พิมพ์กระดาษ A4
         </Button>
       </div>
+
+      {printPicker && (
+        <WithholdingPrintPickerDialog
+          docNo={printPicker.docNo}
+          id={printPicker.id}
+          onClose={() => {
+            setPrintPicker(null);
+            router.push("/withholding");
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
