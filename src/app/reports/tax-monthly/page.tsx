@@ -5,6 +5,7 @@ import {
   Download,
   FileText,
   FileSignature,
+  FileMinus,
   Receipt,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -15,6 +16,7 @@ import {
   getTaxMonthly,
   normalizeDocType,
   type ReportDocType,
+  type TaxMonthlyRow,
 } from "@/lib/queries/reports";
 import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort, THAI_MONTHS_FULL } from "@/lib/thai/date";
@@ -52,14 +54,15 @@ function branchLabel(code: string | null): string {
   return `สาขา ${n}`;
 }
 
-function detailHrefForType(type: ReportDocType, id: number): string {
-  switch (type) {
+function detailHrefForRow(docType: ReportDocType, row: TaxMonthlyRow): string {
+  if (row.kind === "credit_note") return `/credit-notes/${row.id}`;
+  switch (docType) {
     case "invoice":
-      return `/invoices/${id}`;
+      return `/invoices/${row.id}`;
     case "quotation":
-      return `/quotations/${id}`;
+      return `/quotations/${row.id}`;
     case "billing_slip":
-      return `/billing/${id}`;
+      return `/billing/${row.id}`;
   }
 }
 
@@ -78,6 +81,7 @@ export default async function TaxMonthlyPage({
     docType,
   });
   const isFiltered = !!(sp.year && sp.month);
+  const showCnBreakdown = docType === "invoice";
 
   const xlsxHref =
     sp.year && sp.month
@@ -191,50 +195,80 @@ export default async function TaxMonthlyPage({
 
         {isFiltered && (
           <>
-            {/* Summary */}
-            <div
-              className={
-                "grid grid-cols-1 gap-4 " +
-                (tab.hasTax ? "md:grid-cols-4" : "md:grid-cols-2")
-              }
-            >
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-xs text-zinc-500">จำนวนใบ</div>
-                  <div className="text-2xl font-bold">
-                    {result.summary.count.toLocaleString()}
-                  </div>
-                </CardContent>
-              </Card>
-              {tab.hasTax && (
-                <>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-xs text-zinc-500">มูลค่าก่อน VAT</div>
-                      <div className="text-2xl font-bold">
-                        ฿{formatMoney(result.summary.amountBeforeVat)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-xs text-zinc-500">VAT</div>
-                      <div className="text-2xl font-bold">
-                        ฿{formatMoney(result.summary.vatAmount)}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-xs text-zinc-500">รวมทั้งสิ้น</div>
-                  <div className="text-2xl font-bold">
-                    ฿{formatMoney(result.summary.total)}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Summary cards */}
+            {showCnBreakdown ? (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-zinc-500">
+                      ใบกำกับภาษีขาย ({result.summary.invoice.count})
+                    </div>
+                    <div className="text-xs text-zinc-400">ก่อน VAT</div>
+                    <div className="text-xl font-bold">
+                      ฿{formatMoney(result.summary.invoice.amountBeforeVat)}
+                    </div>
+                    <div className="mt-1 text-[11px] text-zinc-500">
+                      VAT ฿{formatMoney(result.summary.invoice.vatAmount)}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-rose-700">
+                      หัก: ใบลดหนี้ ({result.summary.credit.count})
+                    </div>
+                    <div className="text-xs text-zinc-400">ก่อน VAT</div>
+                    <div className="text-xl font-bold text-rose-700">
+                      −฿{formatMoney(result.summary.credit.amountBeforeVat)}
+                    </div>
+                    <div className="mt-1 text-[11px] text-rose-700">
+                      VAT −฿{formatMoney(result.summary.credit.vatAmount)}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4 ring-2 ring-emerald-500/50">
+                    <div className="text-xs font-semibold text-emerald-700">
+                      สุทธิ (ยื่น ภพ.30)
+                    </div>
+                    <div className="text-xs text-zinc-400">ก่อน VAT</div>
+                    <div className="text-xl font-bold text-emerald-700">
+                      ฿{formatMoney(result.summary.net.amountBeforeVat)}
+                    </div>
+                    <div className="mt-1 text-[11px] text-emerald-700">
+                      VAT ฿{formatMoney(result.summary.net.vatAmount)}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-zinc-500">รวมทั้งสิ้น</div>
+                    <div className="text-2xl font-bold">
+                      ฿{formatMoney(result.summary.net.total)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-zinc-500">จำนวนใบ</div>
+                    <div className="text-2xl font-bold">
+                      {result.summary.count.toLocaleString()}
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-xs text-zinc-500">รวมทั้งสิ้น</div>
+                    <div className="text-2xl font-bold">
+                      ฿{formatMoney(result.summary.invoice.total)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Table */}
             <Card>
@@ -254,10 +288,13 @@ export default async function TaxMonthlyPage({
                           <th className="px-3 py-2.5 font-medium w-12 text-center">
                             ลำดับ
                           </th>
+                          {showCnBreakdown && (
+                            <th className="px-3 py-2.5 font-medium w-20">
+                              ประเภท
+                            </th>
+                          )}
                           <th className="px-3 py-2.5 font-medium">วันที่</th>
-                          <th className="px-3 py-2.5 font-medium">
-                            เลขที่{tab.label}
-                          </th>
+                          <th className="px-3 py-2.5 font-medium">เลขที่</th>
                           <th className="px-3 py-2.5 font-medium">ชื่อลูกค้า</th>
                           {tab.hasTax && (
                             <>
@@ -279,72 +316,169 @@ export default async function TaxMonthlyPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {result.rows.map((r, i) => (
-                          <tr key={r.id} className="hover:bg-zinc-50">
-                            <td className="px-3 py-2 text-center text-zinc-500">
-                              {i + 1}
-                            </td>
-                            <td className="px-3 py-2 text-zinc-600 whitespace-nowrap">
-                              {formatThaiDateShort(r.docDate)}
-                            </td>
-                            <td className="px-3 py-2 font-mono text-xs">
-                              <Link
-                                href={detailHrefForType(docType, r.id)}
-                                className="text-blue-600 hover:underline"
-                              >
-                                {r.docNo}
-                              </Link>
-                            </td>
-                            <td
-                              className="px-3 py-2 max-w-xs truncate"
-                              title={r.customerName ?? ""}
+                        {result.rows.map((r, i) => {
+                          const isCn = r.kind === "credit_note";
+                          return (
+                            <tr
+                              key={`${r.kind}-${r.id}`}
+                              className={
+                                isCn
+                                  ? "bg-rose-50/40 hover:bg-rose-100/60"
+                                  : "hover:bg-zinc-50"
+                              }
                             >
-                              {r.customerName ?? "-"}
+                              <td className="px-3 py-2 text-center text-zinc-500">
+                                {i + 1}
+                              </td>
+                              {showCnBreakdown && (
+                                <td className="px-3 py-2">
+                                  {isCn ? (
+                                    <span className="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                                      <FileMinus className="h-3 w-3" />
+                                      ใบลดหนี้
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] text-zinc-500">
+                                      ใบกำกับ
+                                    </span>
+                                  )}
+                                </td>
+                              )}
+                              <td className="px-3 py-2 text-zinc-600 whitespace-nowrap">
+                                {formatThaiDateShort(r.docDate)}
+                              </td>
+                              <td className="px-3 py-2 font-mono text-xs">
+                                <Link
+                                  href={detailHrefForRow(docType, r)}
+                                  className={
+                                    isCn
+                                      ? "text-rose-700 hover:underline"
+                                      : "text-blue-600 hover:underline"
+                                  }
+                                >
+                                  {r.docNo}
+                                </Link>
+                              </td>
+                              <td
+                                className="px-3 py-2 max-w-xs truncate"
+                                title={r.customerName ?? ""}
+                              >
+                                {r.customerName ?? "-"}
+                              </td>
+                              {tab.hasTax && (
+                                <>
+                                  <td className="px-3 py-2 font-mono text-xs text-zinc-500">
+                                    {r.customerTaxId ?? "-"}
+                                  </td>
+                                  <td className="px-3 py-2 text-zinc-600">
+                                    {branchLabel(r.customerBranch)}
+                                  </td>
+                                  <td
+                                    className={
+                                      "px-3 py-2 text-right tabular-nums " +
+                                      (isCn ? "text-rose-700" : "")
+                                    }
+                                  >
+                                    {isCn ? "−" : ""}
+                                    {formatMoney(r.amountBeforeVat)}
+                                  </td>
+                                  <td
+                                    className={
+                                      "px-3 py-2 text-right tabular-nums " +
+                                      (isCn ? "text-rose-700" : "")
+                                    }
+                                  >
+                                    {isCn ? "−" : ""}
+                                    {formatMoney(r.vatAmount)}
+                                  </td>
+                                </>
+                              )}
+                              <td
+                                className={
+                                  "px-3 py-2 text-right tabular-nums font-medium " +
+                                  (isCn ? "text-rose-700" : "")
+                                }
+                              >
+                                {isCn ? "−" : ""}
+                                {formatMoney(r.total)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="border-t bg-zinc-50 text-sm">
+                        {showCnBreakdown ? (
+                          <>
+                            <tr className="font-semibold">
+                              <td
+                                colSpan={tab.hasTax ? 7 : 5}
+                                className="px-3 py-2 text-right text-zinc-700"
+                              >
+                                ยอดขายรวม ({result.summary.invoice.count} ใบ)
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(
+                                  result.summary.invoice.amountBeforeVat,
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(result.summary.invoice.vatAmount)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(result.summary.invoice.total)}
+                              </td>
+                            </tr>
+                            <tr className="font-semibold text-rose-700">
+                              <td
+                                colSpan={tab.hasTax ? 7 : 5}
+                                className="px-3 py-2 text-right"
+                              >
+                                หัก: ใบลดหนี้ ({result.summary.credit.count} ใบ)
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                −
+                                {formatMoney(
+                                  result.summary.credit.amountBeforeVat,
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                −{formatMoney(result.summary.credit.vatAmount)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                −{formatMoney(result.summary.credit.total)}
+                              </td>
+                            </tr>
+                            <tr className="border-t-2 bg-emerald-50 font-bold text-emerald-800">
+                              <td
+                                colSpan={tab.hasTax ? 7 : 5}
+                                className="px-3 py-2 text-right"
+                              >
+                                คงเหลือสุทธิ (ยอดที่ต้องนำส่ง ภพ.30)
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(result.summary.net.amountBeforeVat)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(result.summary.net.vatAmount)}
+                              </td>
+                              <td className="px-3 py-2 text-right tabular-nums">
+                                {formatMoney(result.summary.net.total)}
+                              </td>
+                            </tr>
+                          </>
+                        ) : (
+                          <tr className="font-semibold">
+                            <td
+                              colSpan={tab.hasTax ? 6 : 4}
+                              className="px-3 py-2 text-right"
+                            >
+                              รวม {result.summary.count.toLocaleString()} รายการ
                             </td>
-                            {tab.hasTax && (
-                              <>
-                                <td className="px-3 py-2 font-mono text-xs text-zinc-500">
-                                  {r.customerTaxId ?? "-"}
-                                </td>
-                                <td className="px-3 py-2 text-zinc-600">
-                                  {branchLabel(r.customerBranch)}
-                                </td>
-                                <td className="px-3 py-2 text-right tabular-nums">
-                                  {formatMoney(r.amountBeforeVat)}
-                                </td>
-                                <td className="px-3 py-2 text-right tabular-nums">
-                                  {formatMoney(r.vatAmount)}
-                                </td>
-                              </>
-                            )}
-                            <td className="px-3 py-2 text-right tabular-nums font-medium">
-                              {formatMoney(r.total)}
+                            <td className="px-3 py-2 text-right tabular-nums">
+                              {formatMoney(result.summary.net.total)}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                      <tfoot className="border-t bg-zinc-50 text-sm font-semibold">
-                        <tr>
-                          <td
-                            colSpan={tab.hasTax ? 6 : 4}
-                            className="px-3 py-2 text-right"
-                          >
-                            รวม {result.summary.count.toLocaleString()} รายการ
-                          </td>
-                          {tab.hasTax && (
-                            <>
-                              <td className="px-3 py-2 text-right tabular-nums">
-                                {formatMoney(result.summary.amountBeforeVat)}
-                              </td>
-                              <td className="px-3 py-2 text-right tabular-nums">
-                                {formatMoney(result.summary.vatAmount)}
-                              </td>
-                            </>
-                          )}
-                          <td className="px-3 py-2 text-right tabular-nums">
-                            {formatMoney(result.summary.total)}
-                          </td>
-                        </tr>
+                        )}
                       </tfoot>
                     </table>
                   </div>
