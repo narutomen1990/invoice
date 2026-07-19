@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Plus, FileMinus, Trash2, Printer } from "lucide-react";
+import { Pencil, Plus, FileMinus, Trash2, Printer, FileSearch } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort } from "@/lib/thai/date";
 import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picker";
+import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
 
 export type InvoiceRow = {
   id: number;
@@ -82,6 +83,7 @@ export function InvoiceTableWithDetail({
     rows[0]?.id ?? null,
   );
   const [printOpen, setPrintOpen] = useState(false);
+  const [missingOpen, setMissingOpen] = useState(false);
   const selected = rows.find((r) => r.id === selectedId) ?? rows[0] ?? null;
 
   return (
@@ -230,6 +232,17 @@ export function InvoiceTableWithDetail({
           <Printer className="h-4 w-4" />
           พิมพ์กระดาษ A4
         </Button>
+
+        <Button
+          type="button"
+          onClick={() => setMissingOpen(true)}
+          title="ตรวจสอบเลขที่ใบกำกับที่เว้นข้ามไป"
+          className="w-full justify-start bg-amber-500 text-white hover:bg-amber-600"
+        >
+          <FileSearch className="h-4 w-4" />
+          รายงานเลขที่ขาดหาย
+        </Button>
+
         <Link href="/" className="block">
           <Button className="w-full justify-start bg-blue-700 text-white hover:bg-blue-800">
             ESC ออก
@@ -251,6 +264,10 @@ export function InvoiceTableWithDetail({
           id={selected.id}
           onClose={() => setPrintOpen(false)}
         />
+      )}
+
+      {missingOpen && (
+        <MissingDocNoDialog onClose={() => setMissingOpen(false)} />
       )}
     </div>
   );

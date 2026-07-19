@@ -7,7 +7,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { documents, documentItems, customers, companies } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
-import { reserveNextDocNo, useCustomDocNo } from "@/lib/counter";
+import { reserveNextDocNo, useCustomDocNo, parseDocNo, buildDocNo } from "@/lib/counter";
 import { writeJournal } from "@/lib/audit";
 import { bahtText } from "@/lib/thai/number";
 
@@ -454,6 +454,63 @@ export async function checkDocNoAvailableAction(docNo: string): Promise<{
     return { available: false, reason: "เลขนี้มีอยู่แล้วในระบบ" };
   }
   return { available: true };
+}
+
+export type MissingDocNoGroup = {
+  yearBe: string;
+  month: string;
+  min: string;
+  max: string;
+  missing: string[];
+};
+
+/** Find gaps in invoice doc_no sequences (per year/month) so intentionally-skipped
+ * numbers can be located and filled in later. */
+export async function getMissingDocNosAction(): Promise<{
+  groups: MissingDocNoGroup[];
+}> {
+  const rows = await db.execute<{ doc_no: string }>(sql`
+    SELECT doc_no FROM documents WHERE document_type = 'invoice' ORDER BY doc_no
+  `);
+
+  const byMonth = new Map<
+    string,
+    { yearBe: string; month: string; prefix: string; values: number[] }
+  >();
+  for (const r of rows) {
+    const parts = parseDocNo(r.doc_no);
+    if (!parts) continue;
+    const key = `${parts.yearBe}-${parts.month}`;
+    let g = byMonth.get(key);
+    if (!g) {
+      g = { yearBe: parts.yearBe, month: parts.month, prefix: parts.prefix, values: [] };
+      byMonth.set(key, g);
+    }
+    g.values.push(parts.value);
+  }
+
+  const groups: MissingDocNoGroup[] = [];
+  for (const g of byMonth.values()) {
+    g.values.sort((a, b) => a - b);
+    const min = g.values[0]!;
+    const max = g.values[g.values.length - 1]!;
+    const present = new Set(g.values);
+    const missing: string[] = [];
+    for (let v = min; v <= max; v++) {
+      if (!present.has(v)) missing.push(buildDocNo(g.prefix, g.yearBe, g.month, v));
+    }
+    if (missing.length > 0) {
+      groups.push({
+        yearBe: g.yearBe,
+        month: g.month,
+        min: buildDocNo(g.prefix, g.yearBe, g.month, min),
+        max: buildDocNo(g.prefix, g.yearBe, g.month, max),
+        missing,
+      });
+    }
+  }
+  groups.sort((a, b) => (a.yearBe + a.month).localeCompare(b.yearBe + b.month));
+  return { groups };
 }
 
 export async function previewNextDocNoAction(docDateBE: string): Promise<{ docNo: string }> {
