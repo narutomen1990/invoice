@@ -30,6 +30,7 @@ export type InvoiceRow = {
   netTotal: number;
   status: string;
   arStatus: string;
+  externalRef: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -58,6 +59,16 @@ function thaiPeriod(iso: string | null): string {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yy = String((d.getFullYear() + 543) % 100).padStart(2, "0");
   return `${mm}/${yy}`;
+}
+
+function docStatusMeta(s: string) {
+  const map: Record<string, { th: string; cls: string }> = {
+    draft: { th: "ร่าง", cls: "bg-orange-100 text-orange-700" },
+    issued: { th: "ออกแล้ว", cls: "bg-green-100 text-green-700" },
+    cancelled: { th: "ยกเลิก", cls: "bg-zinc-100 text-zinc-600" },
+    voided: { th: "โมฆะ", cls: "bg-zinc-100 text-zinc-600" },
+  };
+  return map[s] ?? { th: s, cls: "bg-zinc-100" };
 }
 
 function arStatusMeta(s: string) {
@@ -103,6 +114,7 @@ export function InvoiceTableWithDetail({
               <table className="w-full text-sm">
                 <thead className="border-b bg-sky-100 text-left text-xs text-sky-900">
                   <tr>
+                    <th className="px-3 py-2.5 font-medium">สถานะ</th>
                     <th className="px-3 py-2.5 font-medium">Document No.</th>
                     <th className="px-3 py-2.5 font-medium">รหัสลูกค้า</th>
                     <th className="px-3 py-2.5 font-medium">รายชื่อลูกค้า</th>
@@ -116,6 +128,7 @@ export function InvoiceTableWithDetail({
                 <tbody className="divide-y">
                   {rows.map((r) => {
                     const isSel = r.id === selectedId;
+                    const docStatus = docStatusMeta(r.status);
                     return (
                       <tr
                         key={r.id}
@@ -128,6 +141,23 @@ export function InvoiceTableWithDetail({
                           isSel ? "bg-sky-100" : "hover:bg-sky-50"
                         }`}
                       >
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <span
+                              className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${docStatus.cls}`}
+                            >
+                              {docStatus.th}
+                            </span>
+                            {r.externalRef && (
+                              <span
+                                className="inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
+                                title={`รับข้อมูลมาจาก service-center — ref: ${r.externalRef}`}
+                              >
+                                📥 service-center
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-3 py-2 font-mono text-xs">
                           {r.internalSeq ?? "-"}
                         </td>
@@ -310,6 +340,12 @@ function DetailPanel({ inv }: { inv: InvoiceRow }) {
             {formatThaiDateTime(inv.updatedAt)}
           </span>
         </div>
+        {inv.externalRef && (
+          <div className="border-t border-cyan-200 bg-indigo-50 px-3 py-1.5 text-[11px] text-indigo-800">
+            📥 รับข้อมูลมาจาก service-center —{" "}
+            <span className="font-mono">{inv.externalRef}</span>
+          </div>
+        )}
       </div>
 
       {/* RIGHT: Invoice amounts (red border) */}
@@ -317,7 +353,14 @@ function DetailPanel({ inv }: { inv: InvoiceRow }) {
         <div className="grid grid-cols-[1fr_1fr] gap-x-3 gap-y-1.5 border-b border-rose-200 bg-rose-50 px-3 py-2">
           <div>
             <div className="text-[10px] text-rose-700">Invoice :</div>
-            <div className="font-mono font-bold text-rose-900">{inv.docNo}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono font-bold text-rose-900">{inv.docNo}</span>
+              <span
+                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${docStatusMeta(inv.status).cls}`}
+              >
+                {docStatusMeta(inv.status).th}
+              </span>
+            </div>
           </div>
           <div>
             <div className="text-[10px] text-rose-700">เอกสารอ้างอิง</div>

@@ -5,6 +5,9 @@ const PUBLIC_PATHS = ["/login", "/login-bg.jpg", "/login-logo.jpg"];
 const PUBLIC_PREFIXES = [
   "/_next",
   "/api/auth",
+  // /api/external ยืนยันตัวตนด้วย Authorization: Bearer <EXTERNAL_API_KEY> เอง
+  // ในตัว route handler แทน cookie session — ไม่ใช่ endpoint สำหรับ browser
+  "/api/external",
   "/favicon",
   "/fonts",
   "/uploads/vm-logo",

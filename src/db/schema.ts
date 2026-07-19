@@ -333,6 +333,10 @@ export const documents = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
 
+    // อ้างอิงกลับไประบบภายนอกที่สร้างเอกสารนี้ผ่าน /api/external (เช่น
+    // "sc:{receiptId}" จาก service-center) — ใช้กันสร้างซ้ำ (idempotent)
+    externalRef: varchar("external_ref", { length: 100 }),
+
     // legacy fields preserved from DBF (for audit / debug)
     legacyRunning: varchar("legacy_running", { length: 20 }),
     legacyType: varchar("legacy_type", { length: 5 }),
@@ -354,6 +358,7 @@ export const documents = pgTable(
     index("idx_doc_monthyear").on(t.legacyMonthyear),
     index("idx_doc_running").on(t.legacyRunning),
     index("idx_doc_ar_status").on(t.arStatus),
+    uniqueIndex("uniq_doc_external_ref").on(t.externalRef),
   ],
 );
 

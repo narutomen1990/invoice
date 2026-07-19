@@ -25,6 +25,7 @@ export default async function InvoicesPage({
   const code = (sp.code ?? "").trim();
   const period = (sp.period ?? "").trim(); // 04/69 format
   const docNo = (sp.docNo ?? "").trim();
+  const sourceSc = sp.source === "sc"; // เฉพาะที่รับมาจาก service-center
   const qLike = `%${q}%`;
   const codeLike = `%${code}%`;
   const docNoLike = `%${docNo}%`;
@@ -43,6 +44,7 @@ export default async function InvoicesPage({
          to_char(doc_date, 'MM') = ${periodMM ?? ""} AND
          RIGHT((EXTRACT(YEAR FROM doc_date) + 543)::text, 2) = ${periodYY ?? ""}
        ))
+       AND (${sourceSc} = false OR external_ref IS NOT NULL)
   `);
   const total = Number(countRow?.n ?? 0);
   const lastPage = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -55,7 +57,7 @@ export default async function InvoicesPage({
            saleman_name, memo, reference_quotation_no,
            amount_before_vat::text, vat_amount::text, total::text,
            net_total::text, status::text, ar_status::text,
-           created_at::text, updated_at::text
+           external_ref, created_at::text, updated_at::text
       FROM documents
      WHERE document_type = 'invoice'
        AND (${q} = '' OR customer_name_snapshot ILIKE ${qLike})
@@ -65,6 +67,7 @@ export default async function InvoicesPage({
          to_char(doc_date, 'MM') = ${periodMM ?? ""} AND
          RIGHT((EXTRACT(YEAR FROM doc_date) + 543)::text, 2) = ${periodYY ?? ""}
        ))
+       AND (${sourceSc} = false OR external_ref IS NOT NULL)
      ORDER BY doc_date DESC, id DESC
      LIMIT ${PER_PAGE} OFFSET ${offset}
   `);
@@ -88,6 +91,7 @@ export default async function InvoicesPage({
     netTotal: Number(r.net_total ?? 0),
     status: r.status,
     arStatus: r.ar_status,
+    externalRef: r.external_ref,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }));
@@ -99,11 +103,23 @@ export default async function InvoicesPage({
     if (code) params.set("code", code);
     if (period) params.set("period", period);
     if (docNo) params.set("docNo", docNo);
+    if (sourceSc) params.set("source", "sc");
     const s = params.toString();
     return s ? `/invoices?${s}` : "/invoices";
   };
 
   const pageNumbers = buildPageNumbers(page, lastPage);
+
+  const toggleSourceScHref = (() => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (code) params.set("code", code);
+    if (period) params.set("period", period);
+    if (docNo) params.set("docNo", docNo);
+    if (!sourceSc) params.set("source", "sc");
+    const s = params.toString();
+    return s ? `/invoices?${s}` : "/invoices";
+  })();
 
   return (
     <AppShell>
@@ -119,6 +135,17 @@ export default async function InvoicesPage({
               {total.toLocaleString()} รายการ — หน้า {page} / {lastPage}
             </p>
           </div>
+          <Link
+            href={toggleSourceScHref}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${
+              sourceSc
+                ? "border-indigo-500 bg-indigo-100 text-indigo-800"
+                : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50"
+            }`}
+            title="แสดงเฉพาะใบกำกับที่รับข้อมูลมาจาก service-center (มี externalRef)"
+          >
+            📥 {sourceSc ? "กำลังกรอง: จาก service-center เท่านั้น" : "แสดงเฉพาะจาก service-center"}
+          </Link>
         </div>
 
         {/* Top search bar (4 fields like the legacy app) */}

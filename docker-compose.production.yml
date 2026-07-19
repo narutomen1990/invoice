@@ -50,6 +50,7 @@ services:
       AUTH_SECRET: ${AUTH_SECRET}
       AUTH_URL: https://${DOMAIN}
       NEXT_PUBLIC_APP_URL: https://${DOMAIN}
+      EXTERNAL_API_KEY: ${EXTERNAL_API_KEY}
       TZ: Asia/Bangkok
     volumes:
       - invoice_uploads:/app/public/uploads
