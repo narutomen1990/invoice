@@ -7,17 +7,26 @@ import {
   type MissingDocNoGroup,
 } from "@/app/invoices/actions";
 
+function periodKey(g: { yearBe: string; month: string }): string {
+  return `${g.yearBe}-${g.month}`;
+}
+
 export function MissingDocNoDialog({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [groups, setGroups] = useState<MissingDocNoGroup[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     getMissingDocNosAction()
       .then((res) => {
-        if (!cancelled) setGroups(res.groups);
+        if (cancelled) return;
+        setGroups(res.groups);
+        // most recent period first
+        const last = res.groups[res.groups.length - 1];
+        if (last) setSelectedPeriod(periodKey(last));
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -30,12 +39,13 @@ export function MissingDocNoDialog({ onClose }: { onClose: () => void }) {
     };
   }, []);
 
-  const total = groups.reduce((s, g) => s + g.missing.length, 0);
+  const periods = [...groups].reverse(); // most recent first, for the dropdown
+  const selected = groups.find((g) => periodKey(g) === selectedPeriod) ?? null;
+  const total = selected?.missing.length ?? 0;
 
   function copyAll() {
-    const text = groups
-      .map((g) => `${g.month}/${g.yearBe}\n${g.missing.join("\n")}`)
-      .join("\n\n");
+    if (!selected) return;
+    const text = selected.missing.join("\n");
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -76,22 +86,34 @@ export function MissingDocNoDialog({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {!loading && !error && groups.length > 0 && (
-            <div className="space-y-4">
-              {groups.map((g) => (
-                <div
-                  key={`${g.yearBe}-${g.month}`}
-                  className="rounded border border-amber-300 bg-amber-50"
+            <div className="space-y-3">
+              <label className="block text-[12px] font-medium text-zinc-700">
+                เลือกเดือนที่ต้องการตรวจสอบ
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="mt-1 w-full rounded border border-zinc-300 px-2 py-1.5 font-mono text-[13px]"
                 >
+                  {periods.map((g) => (
+                    <option key={periodKey(g)} value={periodKey(g)}>
+                      {g.month}/{g.yearBe} — ขาด {g.missing.length} เลข
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {selected && (
+                <div className="rounded border border-amber-300 bg-amber-50">
                   <div className="flex items-center justify-between border-b border-amber-200 px-3 py-1.5 text-[12px] text-amber-900">
                     <span className="font-semibold">
-                      เดือน {g.month}/{g.yearBe}
+                      เดือน {selected.month}/{selected.yearBe}
                     </span>
                     <span className="font-mono text-zinc-600">
-                      {g.min} – {g.max}
+                      {selected.min} – {selected.max}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 px-3 py-2">
-                    {g.missing.map((docNo) => (
+                    {selected.missing.map((docNo) => (
                       <span
                         key={docNo}
                         className="rounded border border-rose-300 bg-white px-2 py-0.5 font-mono text-[12px] text-rose-700"
@@ -101,14 +123,14 @@ export function MissingDocNoDialog({ onClose }: { onClose: () => void }) {
                     ))}
                   </div>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
 
         <div className="flex items-center justify-between border-t border-zinc-200 px-4 py-2.5">
           <span className="text-[12px] text-zinc-600">
-            {total > 0 ? `พบเลขที่ขาดหายทั้งหมด ${total} เลข` : ""}
+            {total > 0 ? `เดือนนี้ขาดหาย ${total} เลข` : ""}
           </span>
           <div className="flex gap-2">
             {total > 0 && (
