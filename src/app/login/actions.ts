@@ -6,6 +6,7 @@ import { db } from "@/db/client";
 import { users } from "@/db/schema";
 import { setSession, clearSession, getSession } from "@/lib/auth/session";
 import { verifyPassword, hashPassword } from "@/lib/auth/password";
+import { isPathAllowedForRole, defaultHomeForRole } from "@/lib/auth/access";
 
 export async function loginAction(formData: FormData): Promise<{ error?: string }> {
   const username = String(formData.get("username") ?? "").trim();
@@ -64,7 +65,8 @@ export async function loginAction(formData: FormData): Promise<{ error?: string 
     redirect("/account/change-password");
   }
 
-  redirect(next.startsWith("/") ? next : "/");
+  const target = next.startsWith("/") ? next : "/";
+  redirect(isPathAllowedForRole(user.role, target) ? target : defaultHomeForRole(user.role));
 }
 
 export async function logoutAction() {

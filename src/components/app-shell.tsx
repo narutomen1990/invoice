@@ -21,7 +21,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             VM Camera Pro Invoice
           </span>
         </div>
-        <SideNav />
+        <SideNav role={session?.role} />
       </aside>
 
       <main className="flex flex-1 flex-col">

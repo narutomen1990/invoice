@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { verifySessionEdge, AUTH_COOKIE_NAME } from "@/lib/auth/session";
+import { decodeSessionEdge, AUTH_COOKIE_NAME } from "@/lib/auth/session";
+import { isPathAllowedForRole, defaultHomeForRole } from "@/lib/auth/access";
 
 const PUBLIC_PATHS = ["/login", "/login-bg.jpg", "/login-logo.jpg"];
 const PUBLIC_PREFIXES = [
@@ -21,13 +22,21 @@ export async function middleware(req: NextRequest) {
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return NextResponse.next();
 
   const token = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const valid = await verifySessionEdge(token);
-  if (!valid) {
+  const session = await decodeSessionEdge(token);
+  if (!session) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     if (pathname !== "/") url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
+
+  if (!isPathAllowedForRole(session.role, pathname)) {
+    const url = req.nextUrl.clone();
+    url.pathname = defaultHomeForRole(session.role);
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   return NextResponse.next();
 }
 

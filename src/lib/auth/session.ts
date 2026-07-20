@@ -108,4 +108,10 @@ export async function verifySessionEdge(token: string | undefined): Promise<bool
   return (await decode(token)) !== null;
 }
 
+// edge-safe decode (used in middleware for role-based route gating)
+export async function decodeSessionEdge(token: string | undefined): Promise<SessionPayload | null> {
+  if (!token) return null;
+  return decode(token);
+}
+
 export const AUTH_COOKIE_NAME = COOKIE_NAME;

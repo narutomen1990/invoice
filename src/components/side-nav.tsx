@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isPathAllowedForRole } from "@/lib/auth/access";
 import {
   FileSpreadsheet,
   FileText,
@@ -32,8 +33,9 @@ const MENU = [
   { href: "/backup", label: "สำรองข้อมูล ( BackUp )", icon: Archive },
 ] as const;
 
-export function SideNav() {
+export function SideNav({ role }: { role?: string }) {
   const pathname = usePathname();
+  const menu = MENU.filter((it) => !role || isPathAllowedForRole(role, it.href));
 
   function isActive(href: string): boolean {
     if (href === "/") return pathname === "/";
@@ -42,7 +44,7 @@ export function SideNav() {
 
   return (
     <nav className="space-y-1 p-3 text-sm">
-      {MENU.map((it) => {
+      {menu.map((it) => {
         const Icon = it.icon;
         const active = isActive(it.href);
         return (
