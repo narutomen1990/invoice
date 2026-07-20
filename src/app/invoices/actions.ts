@@ -16,8 +16,6 @@ import {
   createInvoiceCore,
 } from "@/lib/invoices/create-core";
 
-export type { InvoiceInputData };
-
 function parseInvoiceInput(formData: FormData): InvoiceInputData {
   const itemsJson = String(formData.get("items_json") ?? "[]");
   const items = JSON.parse(itemsJson);
