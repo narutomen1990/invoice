@@ -46,7 +46,7 @@ ENV PUPPETEER_CACHE_DIR=${PUPPETEER_CACHE}
 
 # Install Chromium runtime deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates fonts-liberation \
+      ca-certificates fonts-liberation curl gnupg \
       libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 \
       libcairo2 libcups2 libdbus-1-3 libdrm2 libgbm1 libglib2.0-0 \
       libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libx11-6 \
@@ -54,6 +54,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxfixes3 libxkbcommon0 libxrandr2 xdg-utils \
       tzdata \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user

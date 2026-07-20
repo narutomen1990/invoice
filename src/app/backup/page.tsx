@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tabs";
 import { getSession } from "@/lib/auth/session";
 import { listBackupsAction, getBackupDirAction } from "./actions";
+import { BACKUP_RETENTION_DAYS } from "@/lib/backup/core";
 import { BackupActions } from "./backup-actions";
 import { ImportInvoicesCard } from "./import-invoices-card";
 
@@ -74,6 +75,12 @@ export default async function BackupPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-800">
+                ระบบสำรองข้อมูลอัตโนมัติทำงานทุกวัน เวลา 00:30 น. (หลังเที่ยงคืน)
+                และเก็บไฟล์ย้อนหลัง {BACKUP_RETENTION_DAYS} วัน —
+                ไฟล์ที่เก่ากว่านั้นจะถูกลบทิ้งโดยอัตโนมัติ
+              </div>
 
               {isAdmin ? (
                 <Card>
@@ -156,9 +163,8 @@ createdb -h localhost -U postgres invoice_db
 PGPASSWORD=xxx pg_restore -h localhost -U invoice_app -d invoice_db <filename>.dump`}
                   </pre>
                   <p className="mt-3">
-                    แนะนำตั้ง Task Scheduler (Windows) / cron (Linux) ให้ backup
-                    อัตโนมัติทุกวัน — ดู{" "}
-                    <span className="font-mono">setup-windows-server.md</span>
+                    ระบบสร้างไฟล์สำรองให้อัตโนมัติทุกวันอยู่แล้ว (ดูด้านบน)
+                    ไม่ต้องตั้ง Task Scheduler/cron เพิ่มเอง
                   </p>
                 </CardContent>
               </Card>
