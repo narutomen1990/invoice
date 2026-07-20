@@ -5,7 +5,11 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { InvoiceForm } from "@/components/forms/invoice-form";
 import { getInvoiceById } from "@/lib/queries/invoices";
-import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
+import {
+  getCustomerOptions,
+  getProductOptions,
+  getSalesmanOptions,
+} from "@/lib/queries/form-data";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +22,11 @@ export default async function EditInvoicePage({
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
 
-  const [data, customers, products] = await Promise.all([
+  const [data, customers, products, salesmen] = await Promise.all([
     getInvoiceById(numId),
     getCustomerOptions(),
     getProductOptions(),
+    getSalesmanOptions(),
   ]);
 
   if (!data) notFound();
@@ -53,6 +58,7 @@ export default async function EditInvoicePage({
           mode="edit"
           customers={customers}
           products={products}
+          salesmen={salesmen}
           initial={{
             id: doc.id,
             docNo: doc.docNo,

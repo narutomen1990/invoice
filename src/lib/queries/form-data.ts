@@ -22,6 +22,11 @@ export type ProductOption = {
   price: number;
 };
 
+export type SalesmanOption = {
+  id: number;
+  name: string;
+};
+
 export async function getCustomerOptions(): Promise<CustomerOption[]> {
   const rows = await db.execute<any>(sql`
     SELECT id, code, name, tax_id, default_branch_code, address1, address2, address3, province, tel
@@ -40,6 +45,19 @@ export async function getCustomerOptions(): Promise<CustomerOption[]> {
     address3: r.address3,
     province: r.province,
     tel: r.tel,
+  }));
+}
+
+export async function getSalesmanOptions(): Promise<SalesmanOption[]> {
+  const rows = await db.execute<any>(sql`
+    SELECT id, COALESCE(NULLIF(full_name, ''), username) AS name
+      FROM users
+     WHERE is_active = true
+     ORDER BY name
+  `);
+  return rows.map((r) => ({
+    id: Number(r.id),
+    name: r.name,
   }));
 }
 

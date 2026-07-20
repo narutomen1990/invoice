@@ -3,7 +3,11 @@ import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { InvoiceForm } from "@/components/forms/invoice-form";
-import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
+import {
+  getCustomerOptions,
+  getProductOptions,
+  getSalesmanOptions,
+} from "@/lib/queries/form-data";
 import { previewNextDocNoAction } from "@/app/invoices/actions";
 import { todayBE } from "@/lib/thai/date";
 
@@ -11,9 +15,10 @@ export const dynamic = "force-dynamic";
 
 export default async function NewInvoicePage() {
   const today = todayBE();
-  const [customers, products, preview] = await Promise.all([
+  const [customers, products, salesmen, preview] = await Promise.all([
     getCustomerOptions(),
     getProductOptions(),
+    getSalesmanOptions(),
     previewNextDocNoAction(today),
   ]);
 
@@ -34,6 +39,7 @@ export default async function NewInvoicePage() {
           previewDocNo={preview.docNo}
           customers={customers}
           products={products}
+          salesmen={salesmen}
           initial={{
             docDate: today,
             dueDate: null,

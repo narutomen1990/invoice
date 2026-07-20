@@ -38,6 +38,11 @@ type Product = {
   price: number;
 };
 
+type Salesman = {
+  id: number;
+  name: string;
+};
+
 type ItemRow = {
   lineNo: string;
   productCode: string;
@@ -101,12 +106,14 @@ export function InvoiceForm({
   initial,
   customers,
   products,
+  salesmen,
   previewDocNo,
 }: {
   mode: "new" | "edit";
   initial: InvoiceFormInitial;
   customers: Customer[];
   products: Product[];
+  salesmen: Salesman[];
   previewDocNo?: string;
 }) {
   const router = useRouter();
@@ -538,11 +545,21 @@ export function InvoiceForm({
             </div>
             <div className="col-span-2">
               <Lbl>พนักงานขาย</Lbl>
-              <Input
+              <Select
                 value={saleman}
                 onChange={(e) => setSaleman(e.target.value)}
                 className="h-7 bg-white"
-              />
+              >
+                <option value="">— เลือกพนักงานขาย —</option>
+                {saleman && !salesmen.some((s) => s.name === saleman) && (
+                  <option value={saleman}>{saleman}</option>
+                )}
+                {salesmen.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="col-span-2">
               <Lbl>โทรศัพท์ พนักงานขาย</Lbl>
