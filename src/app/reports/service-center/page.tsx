@@ -130,10 +130,10 @@ export default async function ServiceCenterTaxPage({
                   </div>
                   <div className="text-xs text-zinc-400">ก่อน VAT</div>
                   <div className="text-xl font-bold">
-                    ฿{formatMoney(result.summary.amountBeforeVat)}
+                    {formatMoney(result.summary.amountBeforeVat)} บาท
                   </div>
                   <div className="mt-1 text-[11px] text-zinc-500">
-                    VAT ฿{formatMoney(result.summary.vatAmount)}
+                    VAT {formatMoney(result.summary.vatAmount)} บาท
                   </div>
                 </CardContent>
               </Card>
@@ -143,7 +143,7 @@ export default async function ServiceCenterTaxPage({
                     รวมทั้งสิ้น
                   </div>
                   <div className="text-2xl font-bold text-emerald-700">
-                    ฿{formatMoney(result.summary.total)}
+                    {formatMoney(result.summary.total)} บาท
                   </div>
                 </CardContent>
               </Card>

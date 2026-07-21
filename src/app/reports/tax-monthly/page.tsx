@@ -205,10 +205,10 @@ export default async function TaxMonthlyPage({
                     </div>
                     <div className="text-xs text-zinc-400">ก่อน VAT</div>
                     <div className="text-xl font-bold">
-                      ฿{formatMoney(result.summary.invoice.amountBeforeVat)}
+                      {formatMoney(result.summary.invoice.amountBeforeVat)} บาท
                     </div>
                     <div className="mt-1 text-[11px] text-zinc-500">
-                      VAT ฿{formatMoney(result.summary.invoice.vatAmount)}
+                      VAT {formatMoney(result.summary.invoice.vatAmount)} บาท
                     </div>
                   </CardContent>
                 </Card>
@@ -219,10 +219,10 @@ export default async function TaxMonthlyPage({
                     </div>
                     <div className="text-xs text-zinc-400">ก่อน VAT</div>
                     <div className="text-xl font-bold text-rose-700">
-                      −฿{formatMoney(result.summary.credit.amountBeforeVat)}
+                      −{formatMoney(result.summary.credit.amountBeforeVat)} บาท
                     </div>
                     <div className="mt-1 text-[11px] text-rose-700">
-                      VAT −฿{formatMoney(result.summary.credit.vatAmount)}
+                      VAT −{formatMoney(result.summary.credit.vatAmount)} บาท
                     </div>
                   </CardContent>
                 </Card>
@@ -233,10 +233,10 @@ export default async function TaxMonthlyPage({
                     </div>
                     <div className="text-xs text-zinc-400">ก่อน VAT</div>
                     <div className="text-xl font-bold text-emerald-700">
-                      ฿{formatMoney(result.summary.net.amountBeforeVat)}
+                      {formatMoney(result.summary.net.amountBeforeVat)} บาท
                     </div>
                     <div className="mt-1 text-[11px] text-emerald-700">
-                      VAT ฿{formatMoney(result.summary.net.vatAmount)}
+                      VAT {formatMoney(result.summary.net.vatAmount)} บาท
                     </div>
                   </CardContent>
                 </Card>
@@ -244,7 +244,7 @@ export default async function TaxMonthlyPage({
                   <CardContent className="p-4">
                     <div className="text-xs text-zinc-500">รวมทั้งสิ้น</div>
                     <div className="text-2xl font-bold">
-                      ฿{formatMoney(result.summary.net.total)}
+                      {formatMoney(result.summary.net.total)} บาท
                     </div>
                   </CardContent>
                 </Card>
@@ -263,7 +263,7 @@ export default async function TaxMonthlyPage({
                   <CardContent className="p-4">
                     <div className="text-xs text-zinc-500">รวมทั้งสิ้น</div>
                     <div className="text-2xl font-bold">
-                      ฿{formatMoney(result.summary.invoice.total)}
+                      {formatMoney(result.summary.invoice.total)} บาท
                     </div>
                   </CardContent>
                 </Card>
