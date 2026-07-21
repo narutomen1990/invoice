@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Plus, FileMinus, Trash2, Printer, FileSearch } from "lucide-react";
@@ -10,6 +10,7 @@ import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort } from "@/lib/thai/date";
 import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picker";
 import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
+import { cancelInvoiceAction } from "@/app/invoices/actions";
 
 export type InvoiceRow = {
   id: number;
@@ -84,8 +85,10 @@ function arStatusMeta(s: string) {
 
 export function InvoiceTableWithDetail({
   rows,
+  role,
 }: {
   rows: InvoiceRow[];
+  role?: string;
   /** @deprecated retained for API compat; right-side buttons are rendered internally */
   topActions?: React.ReactNode;
 }) {
@@ -95,7 +98,9 @@ export function InvoiceTableWithDetail({
   );
   const [printOpen, setPrintOpen] = useState(false);
   const [missingOpen, setMissingOpen] = useState(false);
+  const [deleting, startDeleteTransition] = useTransition();
   const selected = rows.find((r) => r.id === selectedId) ?? rows[0] ?? null;
+  const canDelete = role === "admin" || role === "manager";
 
   return (
     <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_220px]">
@@ -226,24 +231,34 @@ export function InvoiceTableWithDetail({
             Add ใบลดหนี้
           </Button>
         </Link>
-        <Button
-          type="button"
-          disabled={!selected}
-          onClick={() => {
-            if (!selected) return;
-            if (
-              confirm(
-                `ลบใบกำกับ ${selected.docNo} ของ ${selected.customerName ?? ""}?`,
-              )
-            ) {
-              alert("ฟีเจอร์ลบใบกำกับยังไม่เปิดใช้งาน — โปรดติดต่อผู้ดูแล");
-            }
-          }}
-          className="w-full justify-start bg-rose-500 text-white hover:bg-rose-600"
-        >
-          <Trash2 className="h-4 w-4" />
-          ลบ Record ปัจจุบัน
-        </Button>
+        {canDelete && (
+          <Button
+            type="button"
+            disabled={!selected || deleting}
+            onClick={() => {
+              if (!selected) return;
+              if (
+                !confirm(
+                  `ยกเลิกใบกำกับ ${selected.docNo} ของ ${selected.customerName ?? ""}?`,
+                )
+              ) {
+                return;
+              }
+              startDeleteTransition(async () => {
+                const res = await cancelInvoiceAction(selected.id);
+                if (res.error) {
+                  alert(res.error);
+                } else {
+                  router.refresh();
+                }
+              });
+            }}
+            className="w-full justify-start bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleting ? "กำลังลบ..." : "ลบ Record ปัจจุบัน"}
+          </Button>
+        )}
 
         <Button
           type="button"

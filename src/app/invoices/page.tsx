@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db/client";
 import { sql } from "drizzle-orm";
+import { getSession } from "@/lib/auth/session";
 import { InvoiceTableWithDetail, type InvoiceRow } from "./table-with-detail";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export default async function InvoicesPage({
   searchParams: SearchParams;
 }) {
   const sp = await searchParams;
+  const session = await getSession();
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
   const offset = (page - 1) * PER_PAGE;
   const q = (sp.q ?? "").trim();
@@ -193,7 +195,7 @@ export default async function InvoicesPage({
           )}
         </form>
 
-        <InvoiceTableWithDetail rows={rows} />
+        <InvoiceTableWithDetail rows={rows} role={session?.role} />
 
         {lastPage > 1 && (
           <div className="flex items-center justify-between">

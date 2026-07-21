@@ -172,6 +172,9 @@ export async function updateInvoiceAction(id: number, formData: FormData): Promi
 export async function cancelInvoiceAction(id: number, reason?: string): Promise<{ error?: string; ok?: boolean }> {
   const session = await getSession();
   if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin" && session.role !== "manager") {
+    return { error: "เฉพาะ admin หรือ manager เท่านั้นที่ลบได้" };
+  }
 
   await db.transaction(async (tx) => {
     const [doc] = await tx
