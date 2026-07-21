@@ -203,6 +203,37 @@ export async function cancelInvoiceAction(id: number, reason?: string): Promise<
   return { ok: true };
 }
 
+/**
+ * Permanently deletes an invoice record (document_items and document_journals
+ * cascade with it). Unlike cancelInvoiceAction, this does NOT touch the
+ * counters table — the doc_no is intentionally left as a gap in the
+ * sequence, findable later via the "รายงานเลขที่ขาดหาย" report so it can be
+ * re-issued or accounted for. Tax invoice numbers must never be silently
+ * reused; a real number that once existed just becomes a documented skip.
+ */
+export async function deleteInvoiceAction(id: number): Promise<{ error?: string; ok?: boolean }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin" && session.role !== "manager") {
+    return { error: "เฉพาะ admin หรือ manager เท่านั้นที่ลบได้" };
+  }
+
+  const [doc] = await db
+    .delete(documents)
+    .where(eq(documents.id, id))
+    .returning({ id: documents.id, docNo: documents.docNo });
+
+  if (!doc) return { error: "ไม่พบใบกำกับนี้ (อาจถูกลบไปแล้ว)" };
+
+  console.log(
+    `[invoice-delete] ${doc.docNo} (id=${id}) deleted by ${session.username} (userId=${session.userId})`,
+  );
+
+  revalidatePath("/invoices");
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export async function lookupCustomerByCodeAction(code: string): Promise<{
   found: boolean;
   customer?: {

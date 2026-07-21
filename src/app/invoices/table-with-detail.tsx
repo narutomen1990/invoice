@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort } from "@/lib/thai/date";
 import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picker";
 import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
-import { cancelInvoiceAction } from "@/app/invoices/actions";
+import { deleteInvoiceAction } from "@/app/invoices/actions";
 
 export type InvoiceRow = {
   id: number;
@@ -239,13 +239,15 @@ export function InvoiceTableWithDetail({
               if (!selected) return;
               if (
                 !confirm(
-                  `ยกเลิกใบกำกับ ${selected.docNo} ของ ${selected.customerName ?? ""}?`,
+                  `ลบใบกำกับ ${selected.docNo} ของ ${selected.customerName ?? ""} ถาวร?\n\n` +
+                    `Record จะหายไปจากระบบ แต่เลขที่ ${selected.docNo} จะไม่ถูกนำไปใช้ซ้ำ ` +
+                    `— จะกลายเป็นเลขที่เว้นว่าง สามารถดูได้ที่ "รายงานเลขที่ขาดหาย" เพื่อนำมาใส่ทีหลังได้`,
                 )
               ) {
                 return;
               }
               startDeleteTransition(async () => {
-                const res = await cancelInvoiceAction(selected.id);
+                const res = await deleteInvoiceAction(selected.id);
                 if (res.error) {
                   alert(res.error);
                 } else {
