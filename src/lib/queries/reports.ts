@@ -233,7 +233,6 @@ export async function getServiceCenterTaxMonthly(opts: {
      WHERE document_type = 'invoice' AND external_ref IS NOT NULL
        AND to_char(doc_date,'YYYY') = ${opts.year}
        AND to_char(doc_date,'MM') = ${m}
-       AND status != 'cancelled'
      ORDER BY doc_date, doc_no
   `);
 
