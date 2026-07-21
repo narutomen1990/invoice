@@ -14,6 +14,7 @@ import {
   runRestore,
   deleteBackupFile,
   cleanupOldBackups,
+  saveUploadedBackup,
   type BackupFile,
 } from "@/lib/backup/core";
 
@@ -59,6 +60,26 @@ export async function restoreBackupAction(filename: string): Promise<{ error?: s
   if (session.role !== "admin") return { error: "เฉพาะ admin เท่านั้นที่ restore ได้" };
 
   const result = await runRestore(filename);
+  if (result.ok) revalidatePath("/backup");
+  return result;
+}
+
+/** Uploads a backup file (.dump/.sql.gz) from the admin's computer into BACKUP_DIR
+ * so it appears in the list and can be restored via restoreBackupAction. */
+export async function uploadBackupAction(
+  formData: FormData,
+): Promise<{ error?: string; ok?: boolean; filename?: string }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") return { error: "เฉพาะ admin เท่านั้น" };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "กรุณาเลือกไฟล์ backup (.dump หรือ .sql.gz)" };
+  }
+
+  const buf = Buffer.from(await file.arrayBuffer());
+  const result = await saveUploadedBackup(file.name, buf);
   if (result.ok) revalidatePath("/backup");
   return result;
 }

@@ -15,7 +15,12 @@ import { Download, RotateCcw } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { listBackupsAction, getBackupDirAction } from "./actions";
 import { BACKUP_RETENTION_DAYS } from "@/lib/backup/core";
-import { BackupActions, RestoreBackupButton, DeleteBackupButton } from "./backup-actions";
+import {
+  BackupActions,
+  RestoreBackupButton,
+  DeleteBackupButton,
+  UploadBackupCard,
+} from "./backup-actions";
 import { ImportInvoicesCard } from "./import-invoices-card";
 
 export const dynamic = "force-dynamic";
@@ -104,6 +109,19 @@ export default async function BackupPage() {
                 <Card>
                   <CardContent className="p-4 text-sm text-amber-700">
                     การสร้าง/ลบไฟล์สำรอง ทำได้โดย admin เท่านั้น
+                  </CardContent>
+                </Card>
+              )}
+
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">
+                      อัปโหลดไฟล์ backup จากคอมพิวเตอร์
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <UploadBackupCard />
                   </CardContent>
                 </Card>
               )}

@@ -1,4 +1,4 @@
-import { mkdir, readdir, stat, unlink } from "node:fs/promises";
+import { mkdir, readdir, stat, unlink, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 
@@ -144,6 +144,29 @@ export async function runRestore(filename: string): Promise<{ error?: string; ok
       resolve({ error: `pg_restore not available: ${err.message}` });
     });
   });
+}
+
+/** Saves an uploaded backup file (from an admin's computer) into BACKUP_DIR so it
+ * shows up in the list and can be restored via the normal restore flow. */
+export async function saveUploadedBackup(
+  originalName: string,
+  buffer: Buffer,
+): Promise<{ error?: string; ok?: boolean; filename?: string }> {
+  const lower = originalName.toLowerCase();
+  const ext = lower.endsWith(".sql.gz") ? ".sql.gz" : lower.endsWith(".dump") ? ".dump" : null;
+  if (!ext) {
+    return { error: "รองรับเฉพาะไฟล์ .dump หรือ .sql.gz เท่านั้น" };
+  }
+
+  const base = path
+    .basename(originalName, ext)
+    .replace(/[^a-zA-Z0-9_-]/g, "_")
+    .slice(0, 60);
+  const filename = `upload_${timestamp()}_${base || "backup"}${ext}`;
+
+  await mkdir(BACKUP_DIR, { recursive: true });
+  await writeFile(path.join(BACKUP_DIR, filename), buffer);
+  return { ok: true, filename };
 }
 
 /** Deletes backup files older than `retentionDays`. Returns the filenames removed. */
