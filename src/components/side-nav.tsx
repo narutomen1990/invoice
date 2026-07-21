@@ -13,6 +13,7 @@ import {
   Package,
   Building2,
   BarChart3,
+  Wrench,
   Shield,
   Archive,
   LayoutDashboard,
@@ -29,6 +30,7 @@ const MENU = [
   { href: "/products", label: "บันทึกรายการสินค้า/บริการ", icon: Package },
   { href: "/settings", label: "บันทึกข้อมูลกิจการ", icon: Building2 },
   { href: "/reports/tax-monthly", label: "รายงานภาษีขาย", icon: BarChart3 },
+  { href: "/reports/service-center", label: "รายงานภาษีงานซ่อม", icon: Wrench },
   { href: "/users", label: "ระบบรักษาความปลอดภัย", icon: Shield },
   { href: "/backup", label: "สำรองข้อมูล ( BackUp )", icon: Archive },
 ] as const;

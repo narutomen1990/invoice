@@ -155,3 +155,111 @@ export async function getTaxMonthly(opts: {
     years,
   };
 }
+
+// ============================================================
+// รายงานภาษีงานซ่อม — เฉพาะใบกำกับที่ลิงค์มาจาก service-center
+// (documents.external_ref IS NOT NULL)
+// ============================================================
+
+export type ServiceCenterTaxRow = {
+  id: number;
+  docNo: string;
+  docDate: string;
+  customerName: string | null;
+  customerTaxId: string | null;
+  customerBranch: string | null;
+  amountBeforeVat: number;
+  vatAmount: number;
+  total: number;
+  externalRef: string | null;
+  status: string;
+};
+
+export type ServiceCenterTaxSummary = {
+  count: number;
+  amountBeforeVat: number;
+  vatAmount: number;
+  total: number;
+};
+
+export type ServiceCenterTaxResult = {
+  rows: ServiceCenterTaxRow[];
+  summary: ServiceCenterTaxSummary;
+  years: string[];
+};
+
+export async function getServiceCenterTaxMonthly(opts: {
+  year?: string;
+  month?: string;
+}): Promise<ServiceCenterTaxResult> {
+  const yearsRaw = await db.execute<{ y: string }>(sql`
+    SELECT DISTINCT to_char(doc_date,'YYYY') AS y
+      FROM documents
+     WHERE document_type = 'invoice' AND external_ref IS NOT NULL
+     ORDER BY y DESC
+  `);
+  const years = yearsRaw.map((r) => r.y);
+  const emptySummary = (): ServiceCenterTaxSummary => ({
+    count: 0,
+    amountBeforeVat: 0,
+    vatAmount: 0,
+    total: 0,
+  });
+
+  if (!opts.year || !opts.month) {
+    return { rows: [], summary: emptySummary(), years };
+  }
+
+  const m = String(parseInt(opts.month, 10)).padStart(2, "0");
+
+  const rowsRaw = await db.execute<{
+    id: number;
+    doc_no: string;
+    doc_date: string;
+    customer_name_snapshot: string | null;
+    customer_tax_id_snapshot: string | null;
+    customer_branch_snapshot: string | null;
+    amount_before_vat: string;
+    vat_amount: string;
+    total: string;
+    external_ref: string | null;
+    status: string;
+  }>(sql`
+    SELECT id, doc_no, doc_date::text,
+           customer_name_snapshot, customer_tax_id_snapshot, customer_branch_snapshot,
+           amount_before_vat::text, vat_amount::text, total::text,
+           external_ref, status
+      FROM documents
+     WHERE document_type = 'invoice' AND external_ref IS NOT NULL
+       AND to_char(doc_date,'YYYY') = ${opts.year}
+       AND to_char(doc_date,'MM') = ${m}
+       AND status != 'cancelled'
+     ORDER BY doc_date, doc_no
+  `);
+
+  const summary = emptySummary();
+  const rows: ServiceCenterTaxRow[] = rowsRaw.map((r) => {
+    const abv = Number(r.amount_before_vat);
+    const vat = Number(r.vat_amount);
+    const tot = Number(r.total);
+    summary.count++;
+    summary.amountBeforeVat += abv;
+    summary.vatAmount += vat;
+    summary.total += tot;
+    return {
+      id: Number(r.id),
+      docNo: r.doc_no,
+      docDate: r.doc_date,
+      customerName: r.customer_name_snapshot,
+      customerTaxId: r.customer_tax_id_snapshot,
+      customerBranch: r.customer_branch_snapshot,
+      amountBeforeVat: abv,
+      vatAmount: vat,
+      total: tot,
+      externalRef: r.external_ref,
+      status: r.status,
+    };
+  });
+
+  return { rows, summary, years };
+}

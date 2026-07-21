@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, FileSpreadsheet, Receipt, Users } from "lucide-react";
+import { BarChart3, FileSpreadsheet, Receipt, Users, Wrench } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -10,6 +10,12 @@ export default function ReportsIndex() {
       icon: FileSpreadsheet,
       title: "รายงานภาษีขาย รายเดือน",
       desc: "สรุปยอดขาย+VAT แยกรายเดือน ส่ง Excel ตามรูปแบบสรรพากร",
+    },
+    {
+      href: "/reports/service-center",
+      icon: Wrench,
+      title: "รายงานภาษีงานซ่อม",
+      desc: "เฉพาะใบกำกับที่ลิงค์มาจาก service-center รายเดือน",
     },
     {
       href: "#",
