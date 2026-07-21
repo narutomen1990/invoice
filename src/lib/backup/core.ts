@@ -81,11 +81,69 @@ export async function runBackup(): Promise<{ error?: string; ok?: boolean; filen
   });
 }
 
-export async function deleteBackupFile(filename: string): Promise<void> {
-  if (filename.includes("/") || filename.includes("\\") || filename.includes("..")) {
+function safeBackupPath(filename: string): string {
+  if (
+    !filename ||
+    filename.includes("/") ||
+    filename.includes("\\") ||
+    filename.includes("..")
+  ) {
     throw new Error("ชื่อไฟล์ไม่ถูกต้อง");
   }
-  await unlink(path.join(BACKUP_DIR, filename));
+  if (!filename.endsWith(".dump") && !filename.endsWith(".sql.gz")) {
+    throw new Error("ไม่ใช่ไฟล์สำรองที่รองรับ");
+  }
+  return path.join(BACKUP_DIR, filename);
+}
+
+export async function deleteBackupFile(filename: string): Promise<void> {
+  await unlink(safeBackupPath(filename));
+}
+
+/** Absolute path to a backup file inside BACKUP_DIR. Throws if the filename looks unsafe. */
+export function resolveBackupPath(filename: string): string {
+  return safeBackupPath(filename);
+}
+
+/** Restores the database from a .dump file via pg_restore -c --if-exists. Destructive — overwrites live data. */
+export async function runRestore(filename: string): Promise<{ error?: string; ok?: boolean }> {
+  let filepath: string;
+  try {
+    filepath = safeBackupPath(filename);
+    await stat(filepath);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "ไม่พบไฟล์สำรองนี้" };
+  }
+
+  const cfg = getDbConfig();
+
+  return new Promise((resolve) => {
+    const proc = spawn(
+      "pg_restore",
+      [
+        "-h", cfg.host,
+        "-p", cfg.port,
+        "-U", cfg.user,
+        "-d", cfg.database,
+        "-c",
+        "--if-exists",
+        filepath,
+      ],
+      { env: { ...process.env, PGPASSWORD: cfg.password } },
+    );
+    let stderr = "";
+    proc.stderr.on("data", (d) => (stderr += d.toString()));
+    proc.on("close", (code) => {
+      if (code !== 0) {
+        resolve({ error: `pg_restore failed (code ${code}): ${stderr.slice(0, 500)}` });
+      } else {
+        resolve({ ok: true });
+      }
+    });
+    proc.on("error", (err) => {
+      resolve({ error: `pg_restore not available: ${err.message}` });
+    });
+  });
 }
 
 /** Deletes backup files older than `retentionDays`. Returns the filenames removed. */

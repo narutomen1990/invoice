@@ -11,10 +11,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Download, RotateCcw } from "lucide-react";
 import { getSession } from "@/lib/auth/session";
 import { listBackupsAction, getBackupDirAction } from "./actions";
 import { BACKUP_RETENTION_DAYS } from "@/lib/backup/core";
-import { BackupActions } from "./backup-actions";
+import { BackupActions, RestoreBackupButton, DeleteBackupButton } from "./backup-actions";
 import { ImportInvoicesCard } from "./import-invoices-card";
 
 export const dynamic = "force-dynamic";
@@ -127,6 +128,11 @@ export default async function BackupPage() {
                           <th className="px-4 py-2.5 font-medium">
                             วันที่สร้าง
                           </th>
+                          {isAdmin && (
+                            <th className="px-4 py-2.5 font-medium text-right">
+                              จัดการ
+                            </th>
+                          )}
                         </tr>
                       </thead>
                       <tbody className="divide-y">
@@ -141,6 +147,21 @@ export default async function BackupPage() {
                             <td className="px-4 py-2 text-zinc-500">
                               {new Date(b.createdAt).toLocaleString("th-TH")}
                             </td>
+                            {isAdmin && (
+                              <td className="px-4 py-2">
+                                <div className="flex items-center justify-end gap-1">
+                                  <a
+                                    href={`/api/backup/${encodeURIComponent(b.name)}`}
+                                    title="ดาวน์โหลดไฟล์"
+                                    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </a>
+                                  <RestoreBackupButton filename={b.name} />
+                                  <DeleteBackupButton filename={b.name} />
+                                </div>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -151,6 +172,13 @@ export default async function BackupPage() {
 
               <Card>
                 <CardContent className="p-4 text-xs leading-relaxed text-zinc-500">
+                  {isAdmin && (
+                    <p className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-amber-800">
+                      กด <RotateCcw className="inline h-3 w-3 align-[-1px]" />{" "}
+                      ที่แถวไฟล์ในตารางด้านบนเพื่อ restore ได้โดยตรงจากหน้านี้
+                      — คำสั่ง CLI ด้านล่างไว้ใช้กรณีย้าย server เท่านั้น
+                    </p>
+                  )}
                   <p className="mb-2 font-semibold text-zinc-700">
                     วิธี restore (CLI):
                   </p>

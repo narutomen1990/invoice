@@ -11,6 +11,7 @@ import {
   BACKUP_RETENTION_DAYS,
   listBackups,
   runBackup,
+  runRestore,
   deleteBackupFile,
   cleanupOldBackups,
   type BackupFile,
@@ -49,6 +50,17 @@ export async function deleteBackupAction(filename: string): Promise<{ error?: st
 
 export async function getBackupDirAction(): Promise<string> {
   return BACKUP_DIR;
+}
+
+/** Restores the database from a backup file. Destructive — overwrites all live data. Admin only. */
+export async function restoreBackupAction(filename: string): Promise<{ error?: string; ok?: boolean }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") return { error: "เฉพาะ admin เท่านั้นที่ restore ได้" };
+
+  const result = await runRestore(filename);
+  if (result.ok) revalidatePath("/backup");
+  return result;
 }
 
 /**
