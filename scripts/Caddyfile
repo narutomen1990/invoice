@@ -21,9 +21,10 @@ invoice.example.com {
         -Server
     }
 
-    # ขนาด upload สูงสุด 20 MB (เผื่ออัพโหลดโลโก้/รูปลายเซ็น)
+    # ขนาด upload สูงสุด 100 MB — ต้องตรงกับ bodySizeLimit ใน next.config.ts
+    # (หน้า /backup รับไฟล์ Invoice.DBF จาก FoxPro ซึ่งมีขนาด ~40 MB ขึ้นไป)
     request_body {
-        max_size 20MB
+        max_size 100MB
     }
 
     # บีบอัด response
