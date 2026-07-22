@@ -8,6 +8,7 @@ import {
   AlertCircle,
   FileDown,
   Database,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { importInvoicesFromFoxProAction } from "./actions";
@@ -23,21 +24,41 @@ export function ImportInvoicesCard() {
   const [pending, startTransition] = useTransition();
   const [dbf, setDbf] = useState<File | null>(null);
   const [fpt, setFpt] = useState<File | null>(null);
+  const [replaceAll, setReplaceAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [deletedCount, setDeletedCount] = useState<number | null>(null);
   const dbfRef = useRef<HTMLInputElement>(null);
   const fptRef = useRef<HTMLInputElement>(null);
 
   function onSubmit() {
     setError(null);
     setResult(null);
+    setDeletedCount(null);
     if (!dbf) {
       setError("กรุณาเลือกไฟล์ Invoice.DBF");
       return;
     }
+
+    if (replaceAll) {
+      const step1 = confirm(
+        "คำเตือน: จะลบใบกำกับภาษีขายและใบลดหนี้ทั้งหมดที่มีอยู่ในระบบตอนนี้ " +
+          "(ไม่กระทบลูกค้า/สินค้า/ใบเสนอราคา/เอกสารประเภทอื่น) แล้วนำเข้าข้อมูลใหม่จากไฟล์นี้แทน\n\n" +
+          "การลบนี้ถาวร กู้คืนไม่ได้ (นอกจาก restore จากไฟล์ backup) ต้องการดำเนินการต่อหรือไม่?",
+      );
+      if (!step1) return;
+
+      const typed = prompt('เพื่อยืนยัน กรุณาพิมพ์คำว่า "ลบทั้งหมด" ให้ตรงกัน:');
+      if (typed !== "ลบทั้งหมด") {
+        if (typed !== null) alert("ข้อความไม่ตรงกัน — ยกเลิกการนำเข้า");
+        return;
+      }
+    }
+
     const fd = new FormData();
     fd.set("dbf", dbf);
     if (fpt) fd.set("fpt", fpt);
+    if (replaceAll) fd.set("replaceAll", "1");
 
     startTransition(async () => {
       const res = await importInvoicesFromFoxProAction(fd);
@@ -47,8 +68,10 @@ export function ImportInvoicesCard() {
       }
       if (res?.result) {
         setResult(res.result);
+        setDeletedCount(res.deletedCount ?? null);
         setDbf(null);
         setFpt(null);
+        setReplaceAll(false);
         if (dbfRef.current) dbfRef.current.value = "";
         if (fptRef.current) fptRef.current.value = "";
         router.refresh();
@@ -72,6 +95,10 @@ export function ImportInvoicesCard() {
             และ <span className="font-mono">Invoice.FPT</span> (แนะนำ — เก็บหมายเหตุยาว ๆ)</li>
           <li>กดปุ่ม "นำเข้า" — ระบบจะเพิ่มเฉพาะ <strong>ใบกำกับใหม่</strong>
             ที่ยังไม่มีในระบบ (ไม่ทับของเดิม ไม่กระทบลูกค้า/สินค้า/เอกสารอื่น)</li>
+          <li>
+            ถ้าติ๊ก "ลบใบกำกับ/ใบลดหนี้เดิมทั้งหมดก่อนนำเข้า" ระบบจะลบใบกำกับ/ใบลดหนี้
+            <strong>ทั้งหมด</strong> ที่มีอยู่ก่อน แล้วนำเข้าไฟล์นี้เป็นข้อมูลชุดใหม่ทั้งหมด
+          </li>
         </ol>
       </div>
 
@@ -115,10 +142,39 @@ export function ImportInvoicesCard() {
         </label>
       </div>
 
+      <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+        <input
+          type="checkbox"
+          checked={replaceAll}
+          onChange={(e) => setReplaceAll(e.target.checked)}
+          disabled={pending}
+          className="mt-0.5"
+        />
+        <span>
+          <span className="font-semibold">
+            ลบใบกำกับ/ใบลดหนี้เดิมทั้งหมดก่อนนำเข้า
+          </span>{" "}
+          — ใช้เมื่อข้อมูลปัจจุบันเป็นแค่ข้อมูลทดสอบและต้องการแทนที่ด้วยไฟล์นี้ทั้งหมด
+          (ไม่กระทบลูกค้า/สินค้า/เอกสารประเภทอื่น) การลบนี้ถาวร
+        </span>
+      </label>
+
       <div>
-        <Button onClick={onSubmit} disabled={pending || !dbf}>
-          <Upload className="h-4 w-4" />
-          {pending ? "กำลังนำเข้า..." : "นำเข้า (OK)"}
+        <Button
+          onClick={onSubmit}
+          disabled={pending || !dbf}
+          className={replaceAll ? "bg-rose-600 hover:bg-rose-700" : undefined}
+        >
+          {replaceAll ? (
+            <Trash2 className="h-4 w-4" />
+          ) : (
+            <Upload className="h-4 w-4" />
+          )}
+          {pending
+            ? "กำลังดำเนินการ..."
+            : replaceAll
+              ? "ลบของเดิมทั้งหมด แล้วนำเข้าใหม่"
+              : "นำเข้า (OK)"}
         </Button>
       </div>
 
@@ -137,6 +193,12 @@ export function ImportInvoicesCard() {
           </div>
           <table className="w-full text-xs">
             <tbody className="divide-y divide-green-200">
+              {deletedCount !== null && (
+                <Row
+                  label="ลบของเดิมก่อนนำเข้า"
+                  value={`${deletedCount.toLocaleString()} รายการ`}
+                />
+              )}
               <Row label="อ่านจาก FoxPro" value={result.recordsRead.toLocaleString()} />
               <Row label="มีในระบบแล้ว (ข้าม)" value={result.alreadyExisted.toLocaleString()} />
               <Row

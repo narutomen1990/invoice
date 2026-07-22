@@ -5,7 +5,11 @@ import os from "node:os";
 import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
-import { importInvoicesFromDbf, type ImportResult } from "@/lib/etl/import-invoices";
+import {
+  importInvoicesFromDbf,
+  deleteAllInvoicesAndCreditNotes,
+  type ImportResult,
+} from "@/lib/etl/import-invoices";
 import {
   BACKUP_DIR,
   BACKUP_RETENTION_DAYS,
@@ -85,18 +89,22 @@ export async function uploadBackupAction(
 }
 
 /**
- * Import NEW invoices from an uploaded FoxPro Invoice.DBF (+ optional .FPT).
- * Skips invoices whose doc_no is already present. Other tables are untouched.
+ * Import invoices from an uploaded FoxPro Invoice.DBF (+ optional .FPT).
+ * By default skips doc_no's already present. When `replaceAll` is set,
+ * first permanently deletes every existing invoice/credit-note document
+ * (customers/products/other doc types untouched) so the file becomes the
+ * sole source of truth — admin only, irreversible.
  */
 export async function importInvoicesFromFoxProAction(
   formData: FormData,
-): Promise<{ error?: string; ok?: boolean; result?: ImportResult }> {
+): Promise<{ error?: string; ok?: boolean; result?: ImportResult; deletedCount?: number }> {
   const session = await getSession();
   if (!session) return { error: "session หมดอายุ" };
   if (session.role !== "admin") return { error: "เฉพาะ admin เท่านั้น" };
 
   const dbfFile = formData.get("dbf");
   const fptFile = formData.get("fpt");
+  const replaceAll = formData.get("replaceAll") === "1";
   if (!(dbfFile instanceof File) || dbfFile.size === 0) {
     return { error: "กรุณาเลือกไฟล์ Invoice.DBF" };
   }
@@ -108,11 +116,18 @@ export async function importInvoicesFromFoxProAction(
     if (fptFile instanceof File && fptFile.size > 0) {
       await writeFile(`${basePath}.FPT`, Buffer.from(await fptFile.arrayBuffer()));
     }
+
+    let deletedCount: number | undefined;
+    if (replaceAll) {
+      deletedCount = (await deleteAllInvoicesAndCreditNotes()).deletedCount;
+    }
+
     const result = await importInvoicesFromDbf(`${basePath}.DBF`);
     revalidatePath("/backup");
     revalidatePath("/invoices");
+    revalidatePath("/credit-notes");
     revalidatePath("/");
-    return { ok: true, result };
+    return { ok: true, result, deletedCount };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: `Import ไม่สำเร็จ: ${msg}` };

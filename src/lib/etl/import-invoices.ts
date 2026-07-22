@@ -66,6 +66,21 @@ function date(v: unknown): string | null {
 }
 
 /**
+ * Permanently deletes every invoice + credit note document (and their items/
+ * journals, which cascade) so a fresh DBF import can repopulate from scratch.
+ * Does NOT touch customers/products/quotations/billing/withholding or the
+ * counters table — importInvoicesFromDbf recomputes invoice counters itself
+ * from whatever remains after this runs.
+ */
+export async function deleteAllInvoicesAndCreditNotes(): Promise<{ deletedCount: number }> {
+  const rows = await db.execute<{ id: number }>(sql`
+    DELETE FROM documents WHERE document_type IN ('invoice', 'credit_note')
+    RETURNING id
+  `);
+  return { deletedCount: rows.length };
+}
+
+/**
  * @param dbfPath  Absolute path to Invoice.DBF — .FPT memo file (if any)
  *                 must sit at the same path with .fpt extension. dbffile
  *                 auto-links it.
