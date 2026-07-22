@@ -2,7 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { decodeSessionEdge, AUTH_COOKIE_NAME } from "@/lib/auth/session";
 import { isPathAllowedForRole, defaultHomeForRole } from "@/lib/auth/access";
 
-const PUBLIC_PATHS = ["/login", "/login-bg.jpg", "/login-logo.jpg"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/login-bg.jpg",
+  "/login-logo.jpg",
+  "/manifest.webmanifest",
+  "/icon.png",
+  "/apple-icon.png",
+];
 const PUBLIC_PREFIXES = [
   "/_next",
   "/api/auth",
@@ -11,6 +18,7 @@ const PUBLIC_PREFIXES = [
   "/api/external",
   "/favicon",
   "/fonts",
+  "/icons",
   "/uploads/vm-logo",
   "/uploads/company-logo",
 ];
