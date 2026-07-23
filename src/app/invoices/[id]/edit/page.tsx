@@ -10,6 +10,7 @@ import {
   getProductOptions,
   getSalesmanOptions,
 } from "@/lib/queries/form-data";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ export default async function EditInvoicePage({
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
 
-  const [data, customers, products, salesmen] = await Promise.all([
+  const [session, data, customers, products, salesmen] = await Promise.all([
+    getSession(),
     getInvoiceById(numId),
     getCustomerOptions(),
     getProductOptions(),
@@ -59,6 +61,7 @@ export default async function EditInvoicePage({
           customers={customers}
           products={products}
           salesmen={salesmen}
+          lockSalesman={session?.role === "staff"}
           initial={{
             id: doc.id,
             docNo: doc.docNo,

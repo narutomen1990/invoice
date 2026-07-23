@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, FileSearch, Copy, Check } from "lucide-react";
+import Link from "next/link";
+import { X, FileSearch, Copy, Check, Plus } from "lucide-react";
 import {
   getMissingDocNosAction,
   type MissingDocNoGroup,
@@ -114,12 +115,15 @@ export function MissingDocNoDialog({ onClose }: { onClose: () => void }) {
                   </div>
                   <div className="flex flex-wrap gap-1.5 px-3 py-2">
                     {selected.missing.map((docNo) => (
-                      <span
+                      <Link
                         key={docNo}
-                        className="rounded border border-rose-300 bg-white px-2 py-0.5 font-mono text-[12px] text-rose-700"
+                        href={`/invoices/new?docNo=${encodeURIComponent(docNo)}`}
+                        title={`สร้างใบกำกับเลขที่ ${docNo}`}
+                        className="group flex items-center gap-1 rounded border border-rose-300 bg-white px-2 py-0.5 font-mono text-[12px] text-rose-700 transition hover:border-rose-500 hover:bg-rose-50"
                       >
                         {docNo}
-                      </span>
+                        <Plus className="h-3 w-3 text-rose-400 group-hover:text-rose-600" />
+                      </Link>
                     ))}
                   </div>
                 </div>

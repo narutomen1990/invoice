@@ -108,6 +108,7 @@ export function InvoiceForm({
   products,
   salesmen,
   previewDocNo,
+  lockSalesman,
 }: {
   mode: "new" | "edit";
   initial: InvoiceFormInitial;
@@ -115,6 +116,7 @@ export function InvoiceForm({
   products: Product[];
   salesmen: Salesman[];
   previewDocNo?: string;
+  lockSalesman?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +187,7 @@ export function InvoiceForm({
     setAddr1(a1); setAddr2(a2); setAddr3(a3);
     setCustomerTel(q.customerTel ?? "");
     setCustomerProvince(q.customerProvince ?? "");
-    setSaleman(q.salemanName ?? "");
+    if (!lockSalesman) setSaleman(q.salemanName ?? "");
     setRefQuo(q.docNo); // อ้างอิงใบเสนอราคา = doc_no ของ quotation
     setDiscount(String(q.discount));
     setVatRate(String(q.vatRate));
@@ -548,7 +550,9 @@ export function InvoiceForm({
               <Select
                 value={saleman}
                 onChange={(e) => setSaleman(e.target.value)}
-                className="h-7 bg-white"
+                disabled={lockSalesman}
+                title={lockSalesman ? "คุณไม่มีสิทธิ์เปลี่ยนพนักงานขาย" : undefined}
+                className="h-7 bg-white disabled:opacity-70"
               >
                 <option value="">— เลือกพนักงานขาย —</option>
                 {saleman && !salesmen.some((s) => s.name === saleman) && (

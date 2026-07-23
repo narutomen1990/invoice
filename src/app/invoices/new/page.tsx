@@ -10,17 +10,25 @@ import {
 } from "@/lib/queries/form-data";
 import { previewNextDocNoAction } from "@/app/invoices/actions";
 import { todayBE } from "@/lib/thai/date";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewInvoicePage() {
+export default async function NewInvoicePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ docNo?: string }>;
+}) {
+  const sp = await searchParams;
   const today = todayBE();
-  const [customers, products, salesmen, preview] = await Promise.all([
+  const [session, customers, products, salesmen, preview] = await Promise.all([
+    getSession(),
     getCustomerOptions(),
     getProductOptions(),
     getSalesmanOptions(),
     previewNextDocNoAction(today),
   ]);
+  const myName = session?.fullName?.trim() || session?.username || null;
 
   return (
     <AppShell>
@@ -40,7 +48,9 @@ export default async function NewInvoicePage() {
           customers={customers}
           products={products}
           salesmen={salesmen}
+          lockSalesman={session?.role === "staff"}
           initial={{
+            docNo: sp.docNo || undefined,
             docDate: today,
             dueDate: null,
             paymentTermsDays: 30,
@@ -52,7 +62,7 @@ export default async function NewInvoicePage() {
             customerAddress: null,
             customerTel: null,
             customerProvince: null,
-            salemanName: null,
+            salemanName: myName,
             shippingMethod: null,
             referenceQuotationNo: null,
             discount: 0,
