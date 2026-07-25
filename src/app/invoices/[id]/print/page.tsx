@@ -400,16 +400,14 @@ export default async function PrintPage({
               <div className="lbl-line">ผู้ส่งสินค้า</div>
               <div className="sign-row">
                 <span className="lbl-en">Delivery By</span>
-                <span className="dots dots-filled">{doc.salemanName ?? ""}</span>
+                <span className="dots"></span>
               </div>
             </div>
             <div className="sign-stack">
               <div className="lbl-line">วันที่</div>
               <div className="sign-row">
                 <span className="lbl-en">Date</span>
-                <span className="dots dots-filled">
-                  {formatThaiDateShort(doc.docDate)}
-                </span>
+                <span className="dots"></span>
               </div>
             </div>
           </div>

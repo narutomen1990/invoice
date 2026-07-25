@@ -21,6 +21,7 @@ const PUBLIC_PREFIXES = [
   "/icons",
   "/uploads/vm-logo",
   "/uploads/company-logo",
+  "/uploads/signatures",
 ];
 
 export async function middleware(req: NextRequest) {
