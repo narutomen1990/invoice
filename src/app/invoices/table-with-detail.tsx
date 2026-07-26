@@ -127,6 +127,7 @@ export function InvoiceTableWithDetail({
                     <th className="px-3 py-2.5 font-medium">วันที่ในใบกำกับ</th>
                     <th className="px-3 py-2.5 font-medium">เดือนปี</th>
                     <th className="px-3 py-2.5 font-medium">เอกสารอ้างอิง</th>
+                    <th className="px-3 py-2.5 font-medium">หมายเหตุภายใน</th>
                     <th className="px-3 py-2.5 font-medium">พนักงานขาย</th>
                   </tr>
                 </thead>
@@ -183,6 +184,9 @@ export function InvoiceTableWithDetail({
                         </td>
                         <td className="px-3 py-2 font-mono text-xs text-zinc-600">
                           {r.referenceQuotationNo ?? "-"}
+                        </td>
+                        <td className="px-3 py-2 font-mono text-xs text-zinc-600">
+                          {r.memo ?? "-"}
                         </td>
                         <td className="px-3 py-2 text-zinc-600">
                           {r.salemanName ?? "-"}
