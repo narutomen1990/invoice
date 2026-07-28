@@ -101,6 +101,30 @@ function splitAddress(addr: string | null): [string, string, string] {
   return [parts[0] ?? "", parts[1] ?? "", parts[2] ?? ""];
 }
 
+/** 'YYYY-MM-DD' (พ.ศ.) → 'DD/MM/YYYY' for display/editing */
+function isoToDmy(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return iso;
+  const [, y, mo, d] = m;
+  return `${d}/${mo}/${y}`;
+}
+
+/** 'DD/MM/YYYY' → 'YYYY-MM-DD', or null if not a complete valid-looking date yet */
+function dmyToIso(dmy: string): string | null {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+/** auto-inserts '/' as the user types digits: '25072569' → '25/07/2569' */
+function maskDmyInput(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 export function InvoiceForm({
   mode,
   initial,
@@ -129,8 +153,8 @@ export function InvoiceForm({
     return () => clearTimeout(t);
   }, [savedToast]);
 
-  const [docDate, setDocDate] = useState(initial.docDate);
-  const [dueDate, setDueDate] = useState(initial.dueDate ?? "");
+  const [docDate, setDocDate] = useState(() => isoToDmy(initial.docDate));
+  const [dueDate, setDueDate] = useState(() => isoToDmy(initial.dueDate ?? ""));
   const [terms, setTerms] = useState(initial.paymentTermsDays);
   const [docNo, setDocNo] = useState(initial.docNo ?? previewDocNo ?? "");
   const [docNoCheck, setDocNoCheck] = useState<{
@@ -322,8 +346,8 @@ export function InvoiceForm({
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    fd.set("docDate", docDate);
-    fd.set("dueDate", dueDate);
+    fd.set("docDate", dmyToIso(docDate) ?? docDate);
+    fd.set("dueDate", dueDate ? (dmyToIso(dueDate) ?? dueDate) : "");
     fd.set("paymentTermsDays", String(terms));
     // custom doc_no: only send if user changed from preview
     if (
@@ -606,9 +630,10 @@ export function InvoiceForm({
               <Lbl>วันที่ใบกำกับ</Lbl>
               <Input
                 value={docDate}
-                onChange={(e) => setDocDate(e.target.value)}
+                onChange={(e) => setDocDate(maskDmyInput(e.target.value))}
                 className="h-7 bg-white text-center"
-                placeholder="YYYY-MM-DD"
+                placeholder="DD/MM/YYYY"
+                maxLength={10}
               />
             </div>
           </div>
@@ -666,9 +691,10 @@ export function InvoiceForm({
               <Lbl>วันครบกำหนด</Lbl>
               <Input
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={(e) => setDueDate(maskDmyInput(e.target.value))}
                 className="h-7 bg-white text-center"
-                placeholder="YYYY-MM-DD"
+                placeholder="DD/MM/YYYY"
+                maxLength={10}
               />
             </div>
           </div>
