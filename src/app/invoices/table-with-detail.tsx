@@ -156,10 +156,10 @@ export function InvoiceTableWithDetail({
                             </span>
                             {r.externalRef && (
                               <span
-                                className="inline-block rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
+                                className="inline-block whitespace-nowrap rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
                                 title={`รับข้อมูลมาจาก service-center — ref: ${r.externalRef}`}
                               >
-                                📥 service-center
+                                service-center
                               </span>
                             )}
                           </div>
