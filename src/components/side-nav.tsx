@@ -21,6 +21,7 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  Hash,
 } from "lucide-react";
 
 const MENU = [
@@ -41,6 +42,7 @@ const MENU = [
 const SYSTEM_SETTINGS_MENU = [
   { href: "/users", label: "ระบบรักษาความปลอดภัย", icon: Shield },
   { href: "/backup", label: "สำรองข้อมูล ( BackUp )", icon: Archive },
+  { href: "/settings/doc-format", label: "กำหนดรูปแบบเอกสาร", icon: Hash },
 ] as const;
 
 export function SideNav({ role }: { role?: string }) {

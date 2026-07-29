@@ -77,23 +77,25 @@ function parseForm(formData: FormData) {
   });
 }
 
-/** Generate next WTI doc number: WTI-YYYYMM##### */
+/** Generate next WHT doc number: WHT<yy><mm>-<seq> — yy = ปี พ.ศ. 2 หลัก, mm = เดือน, seq = 3 หลัก (เช่น WHT6905-001) */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function nextWhtDocNo(tx: any, issueDate: string): Promise<{
   docNo: string;
   seq: number;
 }> {
   const [y, m] = issueDate.split("-");
-  const yyyymm = `${y}${(m ?? "01").padStart(2, "0")}`;
-  const lockKey = `wht:${yyyymm}`;
+  const yearBe = String((parseInt(y ?? "0", 10) + 543) % 100).padStart(2, "0");
+  const month = (m ?? "01").padStart(2, "0");
+  const yymm = `${yearBe}${month}`;
+  const lockKey = `wht:${yymm}`;
   await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
   const rows = await tx.execute(sql`
     SELECT COALESCE(MAX(sequence_no), 0) + 1 AS next
       FROM withholding_certificates
-     WHERE doc_no LIKE ${"WTI-" + yyyymm + "%"}
+     WHERE doc_no LIKE ${"WHT" + yymm + "-%"}
   `);
   const seq = Number(rows[0]?.next ?? 1);
-  return { docNo: `WTI-${yyyymm}${String(seq).padStart(5, "0")}`, seq };
+  return { docNo: `WHT${yymm}-${String(seq).padStart(3, "0")}`, seq };
 }
 
 function rowFromInput(d: z.infer<typeof WhtSchema>) {

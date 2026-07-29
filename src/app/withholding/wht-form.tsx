@@ -235,7 +235,7 @@ export function WhtForm({
             <Input
               value={mode === "edit" ? initial.docNo ?? "" : customDocNo}
               onChange={(e) => setCustomDocNo(e.target.value)}
-              placeholder="WTI-202605xxxxx"
+              placeholder="WHT6905-001"
               disabled={mode === "edit"}
             />
           </Field>
