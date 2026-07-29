@@ -127,7 +127,6 @@ function Copy({
           <div className="t2">ตามมาตรา 50 ทวิ แห่งประมวลรัษฎากร</div>
         </div>
         <div className="head-no">
-          <div>เล่มที่ {wht.volumeNo || "............"}</div>
           <div>เลขที่ {wht.docNo}</div>
         </div>
       </div>
@@ -481,7 +480,7 @@ export default async function WhtPrintPage({
         .t1 { font-size: 13px; font-weight: 700; }
         .t2 { font-size: 9px; }
         .head-no { font-size: 7.5px; text-align: right; white-space: nowrap; }
-        .head-no div:last-child { font-family: monospace; color: #c00; }
+        .head-no div:last-child { font-family: monospace; color: #000; }
 
         .party {
           border: 1px solid #000;
