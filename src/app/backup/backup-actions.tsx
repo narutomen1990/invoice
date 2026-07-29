@@ -64,13 +64,16 @@ export function BackupActions({
 export function UploadBackupCard() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [restoring, startRestore] = useTransition();
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [uploadedFilename, setUploadedFilename] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function onUpload() {
     if (!file) return;
     setMsg(null);
+    setUploadedFilename(null);
     const fd = new FormData();
     fd.set("file", file);
     startTransition(async () => {
@@ -79,10 +82,33 @@ export function UploadBackupCard() {
         setMsg({ type: "err", text: res.error });
         return;
       }
-      setMsg({ type: "ok", text: `อัปโหลด ${res.filename} เรียบร้อย — กด Restore ที่แถวไฟล์นี้ในตารางด้านล่างเพื่อกู้คืน` });
+      setMsg({ type: "ok", text: `อัปโหลด ${res.filename} เรียบร้อย — ไฟล์นี้ยังไม่ถูกใช้กู้คืนข้อมูล ต้องกดปุ่ม "Restore ไฟล์นี้" ด้านล่างต่ออีกขั้นตอนหนึ่ง` });
+      setUploadedFilename(res.filename ?? null);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
       router.refresh();
+    });
+  }
+
+  function onRestoreUploaded() {
+    if (!uploadedFilename) return;
+    const step1 = confirm(
+      `คำเตือน: การ Restore จากไฟล์ "${uploadedFilename}" จะเขียนทับข้อมูลปัจจุบันทั้งหมดในระบบ\n\n` +
+        `ข้อมูลที่บันทึกหลังจากวันที่สำรองไฟล์นี้จะหายไปถาวรและกู้คืนไม่ได้ ต้องการดำเนินการต่อหรือไม่?`,
+    );
+    if (!step1) return;
+    const step2 = confirm(`ยืนยันอีกครั้ง: Restore จากไฟล์ "${uploadedFilename}" ใช่หรือไม่?`);
+    if (!step2) return;
+
+    startRestore(async () => {
+      const res = await restoreBackupAction(uploadedFilename);
+      if (res?.error) alert(`Restore ไม่สำเร็จ: ${res.error}`);
+      else {
+        alert("Restore สำเร็จ — ข้อมูลถูกกู้คืนจากไฟล์สำรองแล้ว");
+        setUploadedFilename(null);
+        setMsg(null);
+        router.refresh();
+      }
     });
   }
 
@@ -90,7 +116,8 @@ export function UploadBackupCard() {
     <div className="space-y-3">
       <p className="text-xs text-zinc-500">
         นำไฟล์ backup ที่ดาวน์โหลดไว้ในคอมพิวเตอร์ (.dump หรือ .sql.gz) มาอัปโหลดขึ้นเซิร์ฟเวอร์
-        ไฟล์จะไปปรากฏในตารางด้านล่าง จากนั้นกดปุ่ม Restore ที่แถวนั้นเพื่อกู้คืนข้อมูล
+        ไฟล์จะไปปรากฏในตารางด้านล่าง — การอัปโหลด "ไม่ได้" กู้คืนข้อมูลให้อัตโนมัติ
+        ต้องกดปุ่ม Restore อีกขั้นตอนหนึ่งจึงจะกู้คืนจริง
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <input
@@ -119,6 +146,17 @@ export function UploadBackupCard() {
           )}
           {msg.text}
         </div>
+      )}
+      {uploadedFilename && (
+        <Button
+          onClick={onRestoreUploaded}
+          disabled={restoring}
+          variant="destructive"
+          size="sm"
+        >
+          <RotateCcw className={`h-4 w-4 ${restoring ? "animate-spin" : ""}`} />
+          {restoring ? "กำลัง Restore..." : `Restore ไฟล์นี้ (${uploadedFilename})`}
+        </Button>
       )}
     </div>
   );
@@ -153,13 +191,8 @@ export function RestoreBackupButton({ filename }: { filename: string }) {
     );
     if (!step1) return;
 
-    const typed = prompt(
-      `เพื่อยืนยัน กรุณาพิมพ์ชื่อไฟล์ให้ตรงกันทุกตัวอักษร:\n\n${filename}`,
-    );
-    if (typed !== filename) {
-      if (typed !== null) alert("ชื่อไฟล์ไม่ตรงกัน — ยกเลิกการ restore");
-      return;
-    }
+    const step2 = confirm(`ยืนยันอีกครั้ง: Restore จากไฟล์ "${filename}" ใช่หรือไม่?`);
+    if (!step2) return;
 
     startTransition(async () => {
       const res = await restoreBackupAction(filename);
