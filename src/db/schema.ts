@@ -534,6 +534,7 @@ export const withholdingCertificates = pgTable(
         datePaid: string;
         amount: number;
         tax: number;
+        rate?: number | null;
       }[]
     >(),
 

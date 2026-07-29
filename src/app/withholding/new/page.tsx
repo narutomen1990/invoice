@@ -4,12 +4,14 @@ import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db/client";
 import { companies } from "@/db/schema";
+import { getCustomerOptions } from "@/lib/queries/form-data";
 import { WhtForm } from "../wht-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewWithholdingPage() {
   const [company] = await db.select().from(companies).limit(1);
+  const customers = await getCustomerOptions();
   const companyInfo = {
     name: company?.nameTh ?? "",
     taxId: company?.taxId ?? "",
@@ -37,6 +39,7 @@ export default async function NewWithholdingPage() {
         <WhtForm
           mode="new"
           company={companyInfo}
+          customers={customers}
           initial={{
             issueDate: today,
             volumeNo: "",

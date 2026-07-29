@@ -28,6 +28,7 @@ import {
 } from "@/lib/withholding/constants";
 import { createWithholdingAction, updateWithholdingAction } from "./actions";
 import { WithholdingPrintPickerDialog } from "@/components/forms/withholding-print-picker";
+import { CustomerCombobox, type CustomerOption } from "@/components/forms/customer-combobox";
 
 export type WhtFormInitial = {
   id?: number;
@@ -61,16 +62,25 @@ const EMPTY_ITEM: WhtItem = {
   datePaid: "",
   amount: 0,
   tax: 0,
+  rate: null,
 };
+
+const WHT_RATES = [1, 3] as const;
+
+function calcTax(amount: number, rate: number): number {
+  return Math.round(amount * (rate / 100) * 100) / 100;
+}
 
 export function WhtForm({
   mode,
   initial,
   company,
+  customers,
 }: {
   mode: "new" | "edit";
   initial: WhtFormInitial;
   company: CompanyInfo;
+  customers: CustomerOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -90,6 +100,8 @@ export function WhtForm({
   const [payeeName, setPayeeName] = useState(initial.payeeName);
   const [payeeTaxId, setPayeeTaxId] = useState(initial.payeeTaxId);
   const [payeeAddress, setPayeeAddress] = useState(initial.payeeAddress);
+  const [payeeCustomerId, setPayeeCustomerId] = useState<number | null>(null);
+  const [payeeQuery, setPayeeQuery] = useState(initial.payeeName);
   const [items, setItems] = useState<WhtItem[]>(
     initial.items.length ? initial.items : [{ ...EMPTY_ITEM }],
   );
@@ -117,7 +129,29 @@ export function WhtForm({
 
   function updateItem(i: number, key: keyof WhtItem, value: string | number) {
     setItems((prev) =>
-      prev.map((it, idx) => (idx === i ? { ...it, [key]: value } : it)),
+      prev.map((it, idx) => {
+        if (idx !== i) return it;
+        const next = { ...it, [key]: value };
+        if (key === "amount" && next.rate) {
+          next.tax = calcTax(Number(next.amount) || 0, next.rate);
+        } else if (key === "tax") {
+          next.rate = null;
+        }
+        return next;
+      }),
+    );
+  }
+  function setItemRate(i: number, rate: number) {
+    setItems((prev) =>
+      prev.map((it, idx) => {
+        if (idx !== i) return it;
+        const nextRate = it.rate === rate ? null : rate;
+        return {
+          ...it,
+          rate: nextRate,
+          tax: nextRate ? calcTax(Number(it.amount) || 0, nextRate) : it.tax,
+        };
+      }),
     );
   }
   function addItem() {
@@ -138,7 +172,19 @@ export function WhtForm({
       setPayeeName(company.name);
       setPayeeTaxId(company.taxId);
       setPayeeAddress(company.address);
+      setPayeeQuery(company.name);
+      setPayeeCustomerId(null);
     }
+  }
+
+  function pickPayeeCustomer(c: CustomerOption) {
+    setPayeeCustomerId(c.id);
+    setPayeeQuery(c.name);
+    setPayeeName(c.name);
+    setPayeeTaxId(c.taxId ?? "");
+    setPayeeAddress(
+      [c.address1, c.address2, c.address3].filter(Boolean).join("\n"),
+    );
   }
 
   function swapParties() {
@@ -148,6 +194,8 @@ export function WhtForm({
     setPayeeName(payerName);
     setPayeeTaxId(payerTaxId);
     setPayeeAddress(payerAddress);
+    setPayeeQuery(payerName);
+    setPayeeCustomerId(null);
   }
 
   function buildFormData(): FormData {
@@ -179,17 +227,18 @@ export function WhtForm({
         datePaid: it.datePaid,
         amount: Number(it.amount) || 0,
         tax: Number(it.tax) || 0,
+        rate: it.rate ?? null,
       }));
     fd.set("items_json", JSON.stringify(validItems));
     return fd;
   }
 
-  function onSubmit(thenAction: "back" | "print") {
+  function onSubmit(thenAction: "back" | "print", saveAsNew = false) {
     setError(null);
     const fd = buildFormData();
     startTransition(async () => {
       const res =
-        mode === "new"
+        mode === "new" || saveAsNew
           ? await createWithholdingAction(fd)
           : await updateWithholdingAction(initial.id!, fd);
       if (res?.error) {
@@ -309,6 +358,19 @@ export function WhtForm({
             onTaxId={setPayeeTaxId}
             onAddress={setPayeeAddress}
             onFillCompany={() => fillCompany("payee")}
+            picker={
+              <Field label="ค้นหาจากฐานลูกค้า (เลือกเพื่อดึงข้อมูลอัตโนมัติ)">
+                <CustomerCombobox
+                  customers={customers}
+                  selectedId={payeeCustomerId}
+                  inputValue={payeeQuery}
+                  onInputChange={setPayeeQuery}
+                  onSelect={pickPayeeCustomer}
+                  onClear={() => setPayeeCustomerId(null)}
+                  placeholder="พิมพ์ รหัส / ชื่อ / เลขผู้เสียภาษี ลูกค้า"
+                />
+              </Field>
+            }
           />
         </div>
       </SectionCard>
@@ -331,6 +393,7 @@ export function WhtForm({
                 <th className="pb-2 pr-2">ประเภทเงินได้</th>
                 <th className="pb-2 px-2 w-32">วันเดือนปีที่จ่าย</th>
                 <th className="pb-2 px-2 w-32 text-right">จำนวนเงิน</th>
+                <th className="pb-2 px-2 w-20 text-center">อัตรา</th>
                 <th className="pb-2 px-2 w-32 text-right">ภาษีที่หัก</th>
                 <th className="pb-2 w-8" />
               </tr>
@@ -379,6 +442,26 @@ export function WhtForm({
                       onChange={(e) => updateItem(i, "amount", e.target.value)}
                       className="h-8 text-right text-xs tabular-nums"
                     />
+                  </td>
+                  <td className="py-1.5 px-2 align-top">
+                    <div className="flex justify-center gap-1">
+                      {WHT_RATES.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setItemRate(i, r)}
+                          title={`คำนวณภาษีที่หัก ${r}% ของจำนวนเงิน`}
+                          className={
+                            "h-8 flex-1 rounded border text-xs font-semibold transition " +
+                            (it.rate === r
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-zinc-300 bg-white text-zinc-600 hover:bg-zinc-50")
+                          }
+                        >
+                          {r}%
+                        </button>
+                      ))}
+                    </div>
                   </td>
                   <td className="py-1.5 px-2 align-top">
                     <Input
@@ -541,6 +624,18 @@ export function WhtForm({
           <Save className="h-4 w-4" />
           {pending ? "กำลังบันทึก..." : "บันทึก"}
         </Button>
+        {mode === "edit" && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onSubmit("back", true)}
+            disabled={pending}
+            title="บันทึกข้อมูลนี้เป็นเอกสารใหม่ (เลขที่ใหม่) โดยไม่แก้เอกสารเดิม"
+          >
+            <Plus className="h-4 w-4" />
+            {pending ? "กำลังบันทึก..." : "บันทึกเพิ่ม"}
+          </Button>
+        )}
         <Button
           type="button"
           variant="search"
@@ -619,6 +714,7 @@ function PartyBlock({
   onTaxId,
   onAddress,
   onFillCompany,
+  picker,
 }: {
   title: string;
   name: string;
@@ -628,6 +724,7 @@ function PartyBlock({
   onTaxId: (v: string) => void;
   onAddress: (v: string) => void;
   onFillCompany: () => void;
+  picker?: React.ReactNode;
 }) {
   return (
     <div className="space-y-2.5 rounded-lg border border-zinc-200 bg-zinc-50/50 p-3">
@@ -643,6 +740,7 @@ function PartyBlock({
           ใช้ข้อมูลบริษัทเรา
         </button>
       </div>
+      {picker}
       <Field label="ชื่อ">
         <Input value={name} onChange={(e) => onName(e.target.value)} />
       </Field>

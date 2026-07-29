@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db/client";
 import { companies } from "@/db/schema";
 import { getWithholdingById } from "@/lib/queries/withholding";
+import { getCustomerOptions } from "@/lib/queries/form-data";
 import { WhtForm } from "../../wht-form";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function EditWithholdingPage({
     taxId: company?.taxId ?? "",
     address: company?.addressTh ?? "",
   };
+  const customers = await getCustomerOptions();
 
   return (
     <AppShell>
@@ -49,6 +51,7 @@ export default async function EditWithholdingPage({
         <WhtForm
           mode="edit"
           company={companyInfo}
+          customers={customers}
           initial={{
             id: wht.id,
             docNo: wht.docNo,

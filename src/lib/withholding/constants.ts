@@ -66,4 +66,5 @@ export type WhtItem = {
   datePaid: string;
   amount: number;
   tax: number;
+  rate: number | null;
 };

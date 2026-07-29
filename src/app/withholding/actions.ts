@@ -15,6 +15,7 @@ const ItemSchema = z.object({
   datePaid: z.string().default(""),
   amount: z.coerce.number().min(0).default(0),
   tax: z.coerce.number().min(0).default(0),
+  rate: z.coerce.number().nullable().optional().default(null),
 });
 
 const WhtSchema = z.object({
