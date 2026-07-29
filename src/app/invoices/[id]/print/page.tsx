@@ -373,6 +373,13 @@ export default async function PrintPage({
                 </td>
                 <td className="val total-val">{formatMoney(doc.total)}</td>
               </tr>
+              {doc.remark2 && (
+                <tr>
+                  <td colSpan={2} style={{ fontSize: "9px", paddingTop: "4px", textAlign: "left", whiteSpace: "pre-wrap" }}>
+                    {doc.remark2}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

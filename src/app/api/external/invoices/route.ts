@@ -32,6 +32,7 @@ const ExternalInvoiceInput = z.object({
   vatRate: z.coerce.number().min(0).max(100).default(7),
   memo: z.string().nullable().optional(),
   remark1: z.string().nullable().optional(),
+  remark2: z.string().nullable().optional(),
   items: z.array(ExternalItemInput).min(1, "ต้องมีอย่างน้อย 1 รายการ"),
 });
 
@@ -93,6 +94,7 @@ export async function POST(req: NextRequest) {
     vatRate: body.vatRate,
     memo: body.memo ?? null,
     remark1: body.remark1 ?? null,
+    remark2: body.remark2 ?? null,
     items: body.items,
   });
 
