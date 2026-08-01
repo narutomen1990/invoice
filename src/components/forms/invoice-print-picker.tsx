@@ -8,7 +8,7 @@ export function InvoicePrintPickerDialog({
   docNo,
   internalSeq,
   id,
-  stampEnabled = true,
+  stampEnabled = false,
   onClose,
 }: {
   docNo: string;
