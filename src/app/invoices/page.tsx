@@ -70,7 +70,7 @@ export default async function InvoicesPage({
          RIGHT((EXTRACT(YEAR FROM doc_date) + 543)::text, 2) = ${periodYY ?? ""}
        ))
        AND (${sourceSc} = false OR external_ref IS NOT NULL)
-     ORDER BY doc_date DESC, id DESC
+     ORDER BY doc_date DESC, doc_no DESC
      LIMIT ${PER_PAGE} OFFSET ${offset}
   `);
 
