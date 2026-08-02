@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Link from "next/link";
 import { db } from "@/db/client";
 import { sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth/session";
+import { THAI_MONTHS_FULL, toBE } from "@/lib/thai/date";
 import { InvoiceTableWithDetail, type InvoiceRow } from "./table-with-detail";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,16 @@ export default async function InvoicesPage({
   const offset = (page - 1) * PER_PAGE;
   const q = (sp.q ?? "").trim();
   const code = (sp.code ?? "").trim();
-  const period = (sp.period ?? "").trim(); // 04/69 format
+  // ยังไม่เคยค้นหาเลย (ไม่มี pm/py ใน URL) → default เป็นเดือนปัจจุบัน
+  // ถ้าเคยส่งฟอร์มมาแล้ว (ต่อให้เลือก "ทั้งหมด" ว่างๆ) ให้เคารพค่านั้น
+  const hasPeriodParam = sp.pm !== undefined || sp.py !== undefined;
+  const now = new Date();
+  const currentYearBe = toBE(now.getFullYear());
+  const defaultPm = String(now.getMonth() + 1).padStart(2, "0");
+  const defaultPy = String(currentYearBe).slice(-2);
+  const pm = (hasPeriodParam ? (sp.pm ?? "") : defaultPm).trim(); // month, "01".."12"
+  const py = (hasPeriodParam ? (sp.py ?? "") : defaultPy).trim(); // BE year, 2 digits e.g. "69"
+  const period = pm && py ? `${pm}/${py}` : ""; // 04/69 format
   const docNo = (sp.docNo ?? "").trim();
   const sourceSc = sp.source === "sc"; // เฉพาะที่รับมาจาก service-center
   const qLike = `%${q}%`;
@@ -103,7 +113,8 @@ export default async function InvoicesPage({
     if (p > 1) params.set("page", String(p));
     if (q) params.set("q", q);
     if (code) params.set("code", code);
-    if (period) params.set("period", period);
+    if (pm) params.set("pm", pm);
+    if (py) params.set("py", py);
     if (docNo) params.set("docNo", docNo);
     if (sourceSc) params.set("source", "sc");
     const s = params.toString();
@@ -116,12 +127,17 @@ export default async function InvoicesPage({
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (code) params.set("code", code);
-    if (period) params.set("period", period);
+    if (pm) params.set("pm", pm);
+    if (py) params.set("py", py);
     if (docNo) params.set("docNo", docNo);
     if (!sourceSc) params.set("source", "sc");
     const s = params.toString();
     return s ? `/invoices?${s}` : "/invoices";
   })();
+
+  const yearOptions = Array.from({ length: 6 }, (_, i) =>
+    String(currentYearBe - 4 + i).slice(-2),
+  );
 
   return (
     <AppShell>
@@ -135,6 +151,16 @@ export default async function InvoicesPage({
             <p className="text-xs text-zinc-500">
               ราคายังไม่รวมภาษีมูลค่าเพิ่ม ( VAT Exclude ) — ทั้งหมด{" "}
               {total.toLocaleString()} รายการ — หน้า {page} / {lastPage}
+              {period && (
+                <>
+                  {" "}
+                  —{" "}
+                  <span className="font-medium text-cyan-700">
+                    กำลังแสดง: {pm ? THAI_MONTHS_FULL[Number(pm)] : "ทุกเดือน"}
+                    {py ? ` พ.ศ. 25${py}` : ""}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <Link
@@ -154,7 +180,7 @@ export default async function InvoicesPage({
         <form
           method="get"
           action="/invoices"
-          className="grid grid-cols-1 gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 md:grid-cols-[1.4fr_1fr_1fr_1fr_auto_auto]"
+          className="grid grid-cols-1 gap-2 rounded-md border border-cyan-300 bg-cyan-50 px-3 py-2 md:grid-cols-[1.3fr_0.8fr_0.9fr_0.65fr_0.9fr_auto_auto]"
         >
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cyan-700" />
@@ -171,12 +197,33 @@ export default async function InvoicesPage({
             placeholder="รหัส"
             className="h-8 bg-white text-[12px]"
           />
-          <Input
-            name="period"
-            defaultValue={period}
-            placeholder="เดือนปีภาษี (04/69)"
+          <Select
+            name="pm"
+            defaultValue={pm}
             className="h-8 bg-white text-[12px]"
-          />
+          >
+            <option value="">เดือน (ทั้งหมด)</option>
+            {THAI_MONTHS_FULL.slice(1).map((label, i) => {
+              const mm = String(i + 1).padStart(2, "0");
+              return (
+                <option key={mm} value={mm}>
+                  {label}
+                </option>
+              );
+            })}
+          </Select>
+          <Select
+            name="py"
+            defaultValue={py}
+            className="h-8 bg-white text-[12px]"
+          >
+            <option value="">ปี (ทั้งหมด)</option>
+            {yearOptions.map((y) => (
+              <option key={y} value={y}>
+                พ.ศ. 25{y}
+              </option>
+            ))}
+          </Select>
           <Input
             name="docNo"
             defaultValue={docNo}
@@ -186,7 +233,7 @@ export default async function InvoicesPage({
           <Button type="submit" size="sm" variant="search">
             ค้นหา
           </Button>
-          {(q || code || period || docNo) && (
+          {(q || code || hasPeriodParam || docNo) && (
             <Link href="/invoices">
               <Button type="button" size="sm" variant="outline">
                 ยกเลิกค้นหา
