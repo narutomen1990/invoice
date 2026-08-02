@@ -54,7 +54,7 @@ export default async function InvoicesPage({
        AND (${docNo} = '' OR doc_no ILIKE ${docNoLike})
        AND (${period} = '' OR (
          to_char(doc_date, 'MM') = ${periodMM ?? ""} AND
-         RIGHT((EXTRACT(YEAR FROM doc_date) + 543)::text, 2) = ${periodYY ?? ""}
+         RIGHT(EXTRACT(YEAR FROM doc_date)::text, 2) = ${periodYY ?? ""}
        ))
        AND (${sourceSc} = false OR external_ref IS NOT NULL)
   `);
@@ -77,7 +77,7 @@ export default async function InvoicesPage({
        AND (${docNo} = '' OR doc_no ILIKE ${docNoLike})
        AND (${period} = '' OR (
          to_char(doc_date, 'MM') = ${periodMM ?? ""} AND
-         RIGHT((EXTRACT(YEAR FROM doc_date) + 543)::text, 2) = ${periodYY ?? ""}
+         RIGHT(EXTRACT(YEAR FROM doc_date)::text, 2) = ${periodYY ?? ""}
        ))
        AND (${sourceSc} = false OR external_ref IS NOT NULL)
      ORDER BY doc_date DESC, doc_no DESC
