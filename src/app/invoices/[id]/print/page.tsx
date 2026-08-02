@@ -217,7 +217,7 @@ export default async function PrintPage({
               <span className="cust-lbl-mid">เลขประจำตัวผู้เสียภาษีผู้ซื้อ :</span>
               <span className="cust-val-tight">{doc.customerTaxId ?? "-"}</span>
               <span className="cust-lbl-mid">สาขาที่ :</span>
-              <span className="cust-val-tight">{branchLabel(doc.customerBranch)}</span>
+              <span className="cust-val-tight">{doc.customerBranch || "-"}</span>
             </div>
 
             <table className="customer">
