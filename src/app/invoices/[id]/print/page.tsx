@@ -45,6 +45,15 @@ function branchLabel(code: string | null): string {
   return `สาขา ${n}`;
 }
 
+// สาขาของลูกค้า: เลข 0 ล้วน (เช่น "0000") = สำนักงานใหญ่, นอกนั้นโชว์เลขดิบตามที่กรอก
+function customerBranchLabel(code: string | null): string {
+  if (!code) return "-";
+  const c = code.trim();
+  if (!c) return "-";
+  if (/^0+$/.test(c)) return "สำนักงานใหญ่";
+  return c;
+}
+
 type FormKind = "tax" | "notice" | "receipt" | "billing";
 const TITLES: Record<FormKind, { th: string; en: string; thCopy: string; enCopy: string }> = {
   tax: {
@@ -217,7 +226,7 @@ export default async function PrintPage({
               <span className="cust-lbl-mid">เลขประจำตัวผู้เสียภาษีผู้ซื้อ :</span>
               <span className="cust-val-tight">{doc.customerTaxId ?? "-"}</span>
               <span className="cust-lbl-mid">สาขาที่ :</span>
-              <span className="cust-val-tight">{doc.customerBranch || "-"}</span>
+              <span className="cust-val-tight">{customerBranchLabel(doc.customerBranch)}</span>
             </div>
 
             <table className="customer">
