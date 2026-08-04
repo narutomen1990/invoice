@@ -395,7 +395,7 @@ export default async function PrintPage({
 
         {/* SIGNATURES */}
         <div className="sign-block">
-          <div className="sign-col left">
+          <div className={`sign-col left${form === "notice" ? " notice-wide" : ""}`}>
             <div className="sign-title">ได้รับสินค้าแล้วในสภาพที่เรียบร้อยและถูกต้อง</div>
             <div className="sign-title-en ital">Goods Received In Good Order And Condition</div>
             <div className="sign-stack">
@@ -723,13 +723,28 @@ export default async function PrintPage({
           border-top-right-radius: 0;
           border-bottom-right-radius: 0;
         }
+        /* เฉพาะ form=notice: ซ้ายกว้างขึ้น (1.30→1.60) หักจากกล่องกลางเท่านั้น
+           รวม flex ยังเท่าเดิม (3.36) เพื่อไม่ให้กล่องขวา "ในนาม/For" เปลี่ยนความกว้าง
+           และแยกกล่องซ้าย/กลางออกจากกัน (ไม่ touching ต่างจาก form อื่น) ตามที่สั่ง */
+        .sign-col.left.notice-wide {
+          flex: 1.60;
+          margin-right: 2mm;
+          border-top-right-radius: 6px;
+          border-bottom-right-radius: 6px;
+        }
         .sign-col.mid {
           flex: 0.56;                                      /* แคบลงเพื่อให้ left ขยายได้ */
           font-size: 9.5px; justify-content: space-between;
           border-top-left-radius: 0;
           border-bottom-left-radius: 0;
         }
-        .sign-col.mid.compact { justify-content: flex-start; line-height: 1.5; }
+        .sign-col.mid.compact {
+          flex: 0.26;
+          justify-content: flex-start;
+          line-height: 1.5;
+          border-top-left-radius: 6px;
+          border-bottom-left-radius: 6px;
+        }
         .pay-en { font-style: italic; font-size: 9px; color: #333; }
         .pay-company-en { font-style: italic; font-size: 10px; }
         .pay-th { font-size: 10px; }
