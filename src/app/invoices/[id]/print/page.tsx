@@ -395,7 +395,7 @@ export default async function PrintPage({
 
         {/* SIGNATURES */}
         <div className="sign-block">
-          <div className={`sign-col left${form === "notice" ? " notice-wide" : ""}`}>
+          <div className="sign-col left">
             <div className="sign-title">ได้รับสินค้าแล้วในสภาพที่เรียบร้อยและถูกต้อง</div>
             <div className="sign-title-en ital">Goods Received In Good Order And Condition</div>
             <div className="sign-stack">
@@ -428,65 +428,51 @@ export default async function PrintPage({
             </div>
           </div>
 
-          <div className={`sign-col mid${form === "notice" ? " compact" : ""}`}>
-            {form === "notice" ? (
-              <>
-                <div className="pay-en">PAYMENT BY CHEQUE IN FAVOUR OF</div>
-                <div className="pay-company-en">{company.nameEn ?? ""}</div>
-                <div className="pay-en">AND ACROSS &quot; A/C PAYEE ONLY &quot;</div>
-                <div className="pay-th-spacer"></div>
-                <div className="pay-th">กรุณาจ่ายเช็คในนาม</div>
-                <div className="pay-company-th">{company.nameTh}</div>
-                <div className="pay-th">ขีดคร่อม A/C PAYEE ONLY</div>
-              </>
-            ) : (
-              <>
-                <div className="pay-row">
-                  <span>ชำระโดย</span>
-                  <span className="ck"><span className="cbx" /> เงินสด</span>
-                  <span className="ck"><span className="cbx" /> เช็ค</span>
-                  <span className="ck"><span className="cbx" /> เงินโอน</span>
+          <div className="sign-col mid">
+            <div className="pay-row">
+              <span>ชำระโดย</span>
+              <span className="ck"><span className="cbx" /> เงินสด</span>
+              <span className="ck"><span className="cbx" /> เช็ค</span>
+              <span className="ck"><span className="cbx" /> เงินโอน</span>
+            </div>
+            <div className="pay-row-en ital">
+              <span>Paid By</span>
+              <span>Cash</span>
+              <span>Cheque</span>
+              <span>Transfer</span>
+            </div>
+            <div className="pay-line">
+              <span>ธนาคาร</span>
+              <span className="dots-sm"></span>
+              <span>สาขา</span>
+              <span className="dots-sm"></span>
+            </div>
+            <div className="pay-line">
+              <span>เลขที่เช็ค</span>
+              <span className="dots-sm"></span>
+              <span>ลงวันที่</span>
+              <span className="dots-sm"></span>
+            </div>
+            <div className="pay-line">
+              <span>จำนวนเงิน</span>
+              <span className="dots-sm flex-grow"></span>
+            </div>
+            <div className="pay-stack-row">
+              <div className="sign-stack flex-1">
+                <div className="lbl-line">ผู้รับเงิน</div>
+                <div className="sign-row">
+                  <span className="lbl-en">Collector</span>
+                  <span className="dots"></span>
                 </div>
-                <div className="pay-row-en ital">
-                  <span>Paid By</span>
-                  <span>Cash</span>
-                  <span>Cheque</span>
-                  <span>Transfer</span>
+              </div>
+              <div className="sign-stack flex-1">
+                <div className="lbl-line">วันที่</div>
+                <div className="sign-row">
+                  <span className="lbl-en">Date</span>
+                  <span className="dots"></span>
                 </div>
-                <div className="pay-line">
-                  <span>ธนาคาร</span>
-                  <span className="dots-sm"></span>
-                  <span>สาขา</span>
-                  <span className="dots-sm"></span>
-                </div>
-                <div className="pay-line">
-                  <span>เลขที่เช็ค</span>
-                  <span className="dots-sm"></span>
-                  <span>ลงวันที่</span>
-                  <span className="dots-sm"></span>
-                </div>
-                <div className="pay-line">
-                  <span>จำนวนเงิน</span>
-                  <span className="dots-sm flex-grow"></span>
-                </div>
-                <div className="pay-stack-row">
-                  <div className="sign-stack flex-1">
-                    <div className="lbl-line">ผู้รับเงิน</div>
-                    <div className="sign-row">
-                      <span className="lbl-en">Collector</span>
-                      <span className="dots"></span>
-                    </div>
-                  </div>
-                  <div className="sign-stack flex-1">
-                    <div className="lbl-line">วันที่</div>
-                    <div className="sign-row">
-                      <span className="lbl-en">Date</span>
-                      <span className="dots"></span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+              </div>
+            </div>
           </div>
 
           <div className="sign-col right">
@@ -723,33 +709,12 @@ export default async function PrintPage({
           border-top-right-radius: 0;
           border-bottom-right-radius: 0;
         }
-        /* เฉพาะ form=notice: ซ้ายกว้างขึ้น (1.30→1.60) หักจากกล่องกลางเท่านั้น
-           รวม flex ยังเท่าเดิม (3.36) เพื่อไม่ให้กล่องขวา "ในนาม/For" เปลี่ยนความกว้าง
-           และแยกกล่องซ้าย/กลางออกจากกัน (ไม่ touching ต่างจาก form อื่น) ตามที่สั่ง */
-        .sign-col.left.notice-wide {
-          flex: 1.60;
-          margin-right: 2mm;
-          border-top-right-radius: 6px;
-          border-bottom-right-radius: 6px;
-        }
         .sign-col.mid {
           flex: 0.56;                                      /* แคบลงเพื่อให้ left ขยายได้ */
           font-size: 9.5px; justify-content: space-between;
           border-top-left-radius: 0;
           border-bottom-left-radius: 0;
         }
-        .sign-col.mid.compact {
-          flex: 0.26;
-          justify-content: flex-start;
-          line-height: 1.5;
-          border-top-left-radius: 6px;
-          border-bottom-left-radius: 6px;
-        }
-        .pay-en { font-style: italic; font-size: 9px; color: #333; }
-        .pay-company-en { font-style: italic; font-size: 10px; }
-        .pay-th { font-size: 10px; }
-        .pay-company-th { font-size: 10.5px; font-weight: 700; }
-        .pay-th-spacer { height: 2mm; }
         .sign-col.left .sign-title {
           white-space: nowrap;                             /* บังคับบรรทัดเดียว */
           font-size: 9.5px;                                /* ย่อลงเล็กน้อยให้ fit */
