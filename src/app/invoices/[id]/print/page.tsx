@@ -395,7 +395,7 @@ export default async function PrintPage({
 
         {/* SIGNATURES */}
         <div className="sign-block">
-          <div className="sign-col left">
+          <div className={`sign-col left${form === "notice" ? " notice-gap" : ""}`}>
             <div className="sign-title">ได้รับสินค้าแล้วในสภาพที่เรียบร้อยและถูกต้อง</div>
             <div className="sign-title-en ital">Goods Received In Good Order And Condition</div>
             <div className="sign-stack">
@@ -723,6 +723,12 @@ export default async function PrintPage({
           border-top-right-radius: 0;
           border-bottom-right-radius: 0;
         }
+        /* form=notice: แยกกล่องซ้าย/กลางออกจากกัน (ไม่ touching) ตามที่สั่ง */
+        .sign-col.left.notice-gap {
+          margin-right: 2mm;
+          border-top-right-radius: 6px;
+          border-bottom-right-radius: 6px;
+        }
         .sign-col.mid {
           flex: 0.56;                                      /* แคบลงเพื่อให้ left ขยายได้ */
           font-size: 9.5px; justify-content: space-between;
@@ -731,12 +737,20 @@ export default async function PrintPage({
         }
         /* form=notice: ข้อความแจ้งชำระด้วยเช็คแทนช่องกรอกแบบ checkbox — ขยายกล่องนี้
            โดยหักจากกล่องขวา "ในนาม/For" (รวม flex เท่าเดิม 3.36 ไม่กระทบกล่องซ้าย) */
-        .sign-col.mid.notice-pay { flex: 1.10; justify-content: flex-start; line-height: 1.5; }
-        .pay-en { font-style: italic; font-size: 9px; color: #333; }
-        .pay-company-en { font-style: italic; font-size: 10px; }
-        .pay-th { font-size: 10px; }
-        .pay-company-th { font-size: 10.5px; font-weight: 700; }
-        .pay-th-spacer { height: 2mm; }
+        .sign-col.mid.notice-pay {
+          flex: 1.10;
+          justify-content: center;
+          align-items: center;
+          text-align: center;
+          line-height: 1.6;
+          border-top-left-radius: 6px;
+          border-bottom-left-radius: 6px;
+        }
+        .pay-en { font-style: italic; font-size: 9.5px; color: #333; }
+        .pay-company-en { font-style: italic; font-size: 10.5px; }
+        .pay-th { font-size: 10.5px; }
+        .pay-company-th { font-size: 11.5px; font-weight: 700; margin: 0.5mm 0; }
+        .pay-th-spacer { height: 3.5mm; }
         .sign-col.left .sign-title {
           white-space: nowrap;                             /* บังคับบรรทัดเดียว */
           font-size: 9.5px;                                /* ย่อลงเล็กน้อยให้ fit */
