@@ -489,7 +489,7 @@ export default async function PrintPage({
             )}
           </div>
 
-          <div className="sign-col right">
+          <div className={`sign-col right${form === "notice" ? " notice-narrow" : ""}`}>
             {stampDataUrl && (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={stampDataUrl} alt="ตราประทับ" className="stamp-overlay" />
@@ -729,8 +729,9 @@ export default async function PrintPage({
           border-top-left-radius: 0;
           border-bottom-left-radius: 0;
         }
-        /* form=notice: ข้อความแจ้งชำระด้วยเช็คแทนช่องกรอกแบบ checkbox — ไม่แตะขนาด/กรอบกล่อง */
-        .sign-col.mid.notice-pay { justify-content: flex-start; line-height: 1.5; }
+        /* form=notice: ข้อความแจ้งชำระด้วยเช็คแทนช่องกรอกแบบ checkbox — ขยายกล่องนี้
+           โดยหักจากกล่องขวา "ในนาม/For" (รวม flex เท่าเดิม 3.36 ไม่กระทบกล่องซ้าย) */
+        .sign-col.mid.notice-pay { flex: 1.10; justify-content: flex-start; line-height: 1.5; }
         .pay-en { font-style: italic; font-size: 9px; color: #333; }
         .pay-company-en { font-style: italic; font-size: 10px; }
         .pay-th { font-size: 10px; }
@@ -745,6 +746,7 @@ export default async function PrintPage({
           margin-left: 2mm;
           position: relative;
         }
+        .sign-col.right.notice-narrow { flex: 0.96; }      /* form=notice: หักให้กล่องกลางขยาย */
         .stamp-overlay {
           position: absolute;
           top: 50%;
