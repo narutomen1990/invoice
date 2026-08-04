@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Trash2, Save, AlertCircle, X, Printer, FileSpreadsheet,
-  Stamp, Check,
+  Stamp, Check, Calendar,
 } from "lucide-react";
 import { Input, Select } from "@/components/ui/input";
 import { formatMoney, bahtText } from "@/lib/thai/number";
@@ -123,6 +123,36 @@ function maskDmyInput(raw: string): string {
   if (digits.length <= 2) return digits;
   if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/** 'DD/MM/YYYY' (พ.ศ.) → 'YYYY-MM-DD' (ค.ศ.) for native <input type="date">, or "" if incomplete */
+function dmyBeToIsoCe(dmy: string): string {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return "";
+  const [, d, mo, y] = m;
+  const ce = parseInt(y, 10) - 543;
+  return `${ce}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+/** 'YYYY-MM-DD' (ค.ศ., from a native date picker) → 'DD/MM/YYYY' (พ.ศ.) */
+function isoCeToDmyBe(iso: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  return `${d}/${mo}/${parseInt(y, 10) + 543}`;
+}
+
+/** 'DD/MM/YYYY' (พ.ศ.) + N days → new 'DD/MM/YYYY' (พ.ศ.), or null if the input date isn't complete yet */
+function addDaysDmy(dmy: string, days: number): string | null {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  const dt = new Date(parseInt(y, 10) - 543, parseInt(mo, 10) - 1, parseInt(d, 10));
+  dt.setDate(dt.getDate() + days);
+  const yyyy = dt.getFullYear() + 543;
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 export function InvoiceForm({
@@ -590,12 +620,27 @@ export function InvoiceForm({
               </Select>
             </div>
             <div className="col-span-2">
-              <Lbl>โทรศัพท์ พนักงานขาย</Lbl>
-              <Input
-                value={customerTel}
-                onChange={(e) => setCustomerTel(e.target.value)}
-                className="h-7 bg-white"
-              />
+              <Lbl>วันที่ใบกำกับ</Lbl>
+              <div className="relative">
+                <Input
+                  value={docDate}
+                  onChange={(e) => setDocDate(maskDmyInput(e.target.value))}
+                  className="h-7 bg-white pr-6 text-center"
+                  placeholder="DD/MM/YYYY"
+                  maxLength={10}
+                />
+                <input
+                  type="date"
+                  value={dmyBeToIsoCe(docDate)}
+                  onChange={(e) => {
+                    const next = isoCeToDmyBe(e.target.value);
+                    if (next) setDocDate(next);
+                  }}
+                  title="เลือกวันที่จากปฏิทิน"
+                  className="absolute inset-y-0 right-0 w-6 cursor-pointer opacity-0"
+                />
+                <Calendar className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+              </div>
             </div>
           </div>
 
@@ -610,30 +655,19 @@ export function InvoiceForm({
               />
             </div>
             <div className="col-span-2">
+              <Lbl>โทรศัพท์</Lbl>
+              <Input
+                value={customerTel}
+                onChange={(e) => setCustomerTel(e.target.value)}
+                className="h-7 bg-white"
+              />
+            </div>
+            <div className="col-span-2">
               <Lbl>อ้างอิงใบเสนอราคา</Lbl>
               <Input
                 value={refQuo}
                 onChange={(e) => setRefQuo(e.target.value)}
                 className="h-7 bg-white font-mono"
-              />
-            </div>
-            <div className="col-span-2">
-              <Lbl>เครดิตเทอม (วัน)</Lbl>
-              <Input
-                type="number"
-                value={terms}
-                onChange={(e) => setTerms(parseInt(e.target.value) || 0)}
-                className="h-7 bg-white text-center font-semibold tabular-nums"
-              />
-            </div>
-            <div className="col-span-2">
-              <Lbl>วันที่ใบกำกับ</Lbl>
-              <Input
-                value={docDate}
-                onChange={(e) => setDocDate(maskDmyInput(e.target.value))}
-                className="h-7 bg-white text-center"
-                placeholder="DD/MM/YYYY"
-                maxLength={10}
               />
             </div>
           </div>
@@ -685,6 +719,22 @@ export function InvoiceForm({
                 value={addr3}
                 onChange={(e) => setAddr3(e.target.value)}
                 className="h-7 bg-white"
+              />
+            </div>
+            <div className="col-span-2">
+              <Lbl>เครดิตเทอม (วัน)</Lbl>
+              <Input
+                type="number"
+                value={terms}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value) || 0;
+                  setTerms(v);
+                  if (v > 0) {
+                    const next = addDaysDmy(docDate, v);
+                    if (next) setDueDate(next);
+                  }
+                }}
+                className="h-7 bg-white text-center font-semibold tabular-nums"
               />
             </div>
             <div className="col-span-2">
