@@ -395,7 +395,7 @@ export default async function PrintPage({
 
         {/* SIGNATURES */}
         <div className="sign-block">
-          <div className={`sign-col left${form === "notice" ? " notice-gap" : ""}`}>
+          <div className="sign-col left">
             <div className="sign-title">ได้รับสินค้าแล้วในสภาพที่เรียบร้อยและถูกต้อง</div>
             <div className="sign-title-en ital">Goods Received In Good Order And Condition</div>
             <div className="sign-stack">
@@ -723,12 +723,6 @@ export default async function PrintPage({
           border-top-right-radius: 0;
           border-bottom-right-radius: 0;
         }
-        /* form=notice: แยกกล่องซ้าย/กลางออกจากกัน (ไม่ touching) ตามที่สั่ง */
-        .sign-col.left.notice-gap {
-          margin-right: 2mm;
-          border-top-right-radius: 6px;
-          border-bottom-right-radius: 6px;
-        }
         .sign-col.mid {
           flex: 0.56;                                      /* แคบลงเพื่อให้ left ขยายได้ */
           font-size: 9.5px; justify-content: space-between;
@@ -743,8 +737,6 @@ export default async function PrintPage({
           align-items: center;
           text-align: center;
           line-height: 1.6;
-          border-top-left-radius: 6px;
-          border-bottom-left-radius: 6px;
         }
         .pay-en { font-style: italic; font-size: 9.5px; color: #333; }
         .pay-company-en { font-style: italic; font-size: 10.5px; }
