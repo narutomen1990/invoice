@@ -235,6 +235,34 @@ export function InvoiceForm({
 
   const [items, setItems] = useState<ItemRow[]>(fillRows(initial.items));
 
+  // ใบที่บันทึกไว้ตอน VAT=0 (ไม่ได้ตั้งใจ) — เปิด popup ให้เลือกครั้งเดียวตอนเข้าหน้าแก้ไข
+  const [vatFixOpen, setVatFixOpen] = useState(() => {
+    if (mode !== "edit" || initial.vatRate !== 0) return false;
+    const hasAmount = initial.items.some(
+      (it) => (parseFloat(it.quantity) || 0) * (parseFloat(it.unitPrice) || 0) > 0,
+    );
+    return hasAmount;
+  });
+
+  /** ผู้ใช้ยืนยันแล้วว่าราคาที่กรอกไว้เดิมเป็นแบบไหน — คำนวณ VAT 7% ให้ถูกต้องตามนั้น */
+  function applyVatFix(kind: "inclusive" | "exclusive") {
+    if (kind === "inclusive") {
+      // ราคาที่กรอกไว้รวม VAT อยู่แล้ว — ถอดภาษีออกจากราคาต่อหน่วย/ส่วนลด
+      // เพื่อให้สูตรคำนวณ (ที่บวก VAT 7% ทับฐานราคา) ได้ยอดรวมสุทธิเท่าเดิม
+      setItems((prev) =>
+        prev.map((r) => {
+          const p = parseFloat(r.unitPrice);
+          return p ? { ...r, unitPrice: (p / 1.07).toFixed(2) } : r;
+        }),
+      );
+      const dc = parseFloat(discount) || 0;
+      if (dc) setDiscount((dc / 1.07).toFixed(2));
+    }
+    // "exclusive" = ราคาที่กรอกไว้ยังไม่รวม VAT — ไม่ต้องแตะราคา แค่เปิด VAT 7% ให้บวกทับ
+    setVatRate("7");
+    setVatFixOpen(false);
+  }
+
   const [quotationPickerOpen, setQuotationPickerOpen] = useState(false);
   const [printPicker, setPrintPicker] = useState<{
     id: number;
@@ -502,6 +530,42 @@ export function InvoiceForm({
 
   return (
     <>
+    {vatFixOpen && (
+      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-4">
+        <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+          <div className="flex items-center gap-2 border-b border-amber-300 bg-amber-50 px-4 py-3 text-amber-900">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            <div className="text-sm font-bold">ใบนี้ยังไม่ได้คำนวณภาษีมูลค่าเพิ่ม (VAT)</div>
+          </div>
+          <div className="space-y-3 p-4 text-[13px]">
+            <p className="text-zinc-600">ราคาที่กรอกไว้เดิมของใบนี้เป็นแบบไหน? เลือกเพื่อให้ระบบคำนวณ VAT 7% ให้ถูกต้อง — ยังไม่บันทึกจนกว่าจะกด Save</p>
+            <button
+              type="button"
+              onClick={() => applyVatFix("inclusive")}
+              className="block w-full rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-left hover:bg-sky-100"
+            >
+              <div className="font-semibold text-sky-900">ราคารวม VAT อยู่แล้ว</div>
+              <div className="text-[11px] text-zinc-500">ถอดภาษีออกจากยอดเดิม — ยอดรวมสุทธิเท่าเดิม</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => applyVatFix("exclusive")}
+              className="block w-full rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-left hover:bg-sky-100"
+            >
+              <div className="font-semibold text-sky-900">ราคายังไม่รวม VAT (แยก VAT 7%)</div>
+              <div className="text-[11px] text-zinc-500">บวก VAT 7% เพิ่มจากยอดเดิม — ยอดรวมสุทธิเพิ่มขึ้น</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVatFixOpen(false)}
+              className="block w-full rounded-md px-3 py-1.5 text-center text-[12px] text-zinc-500 hover:bg-zinc-100"
+            >
+              ยังไม่แก้ตอนนี้
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     {savedToast && (
       <div className="fixed left-1/2 top-6 z-[60] -translate-x-1/2 rounded-lg border border-green-300 bg-green-50 px-5 py-3 shadow-lg">
         <div className="flex items-center gap-2 text-sm font-semibold text-green-800">

@@ -135,6 +135,9 @@ export function InvoiceTableWithDetail({
                   {rows.map((r) => {
                     const isSel = r.id === selectedId;
                     const docStatus = docStatusMeta(r.status);
+                    const noVat =
+                      (r.status === "draft" || r.status === "issued") &&
+                      r.vatAmount === 0;
                     return (
                       <tr
                         key={r.id}
@@ -144,7 +147,7 @@ export function InvoiceTableWithDetail({
                         }
                         title="ดับเบิลคลิกเพื่อแก้ไข"
                         className={`cursor-pointer ${
-                          isSel ? "bg-sky-100" : "hover:bg-sky-50"
+                          isSel ? "bg-sky-100" : noVat ? "bg-red-50 hover:bg-red-100" : "hover:bg-sky-50"
                         }`}
                       >
                         <td className="px-3 py-2">
@@ -160,6 +163,14 @@ export function InvoiceTableWithDetail({
                                 title={`รับข้อมูลมาจาก service-center — ref: ${r.externalRef}`}
                               >
                                 service-center
+                              </span>
+                            )}
+                            {noVat && (
+                              <span
+                                className="inline-block whitespace-nowrap rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700"
+                                title="ยอด VAT = 0 — ตรวจสอบและแก้ไขให้ถูกต้อง"
+                              >
+                                ⚠ ไม่มี VAT
                               </span>
                             )}
                           </div>
