@@ -14,7 +14,7 @@ import { bahtText } from "@/lib/thai/number";
 export const ItemInput = z.object({
   lineNo: z.coerce.number().int().min(0).nullable().optional(),
   productCode: z.string().nullable().optional(),
-  description: z.string().min(1, "กรุณากรอกรายการ"),
+  description: z.string(),
   quantity: z.coerce.number().min(0).default(0),
   unit: z.string().nullable().optional(),
   unitPrice: z.coerce.number().min(0).default(0),

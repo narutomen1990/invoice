@@ -117,6 +117,24 @@ function dmyToIso(dmy: string): string | null {
   return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
 }
 
+/** a row with nothing typed into it anywhere — the kind fillRows() pads the table out with */
+function isRowBlank(it: ItemRow): boolean {
+  return (
+    !it.description.trim() &&
+    !it.lineNo.trim() &&
+    !it.productCode &&
+    !(parseFloat(it.quantity) || 0) &&
+    !(parseFloat(it.unitPrice) || 0)
+  );
+}
+
+/** grows a textarea's height to fit its content, so multi-line item descriptions stay fully visible */
+function autoGrow(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 /** auto-inserts '/' as the user types digits: '25072569' → '25/07/2569' */
 function maskDmyInput(raw: string): string {
   const digits = raw.replace(/[^\d]/g, "").slice(0, 8);
@@ -403,8 +421,14 @@ export function InvoiceForm({
     fd.set("memo", memo);
     fd.set("remark1", remark1);
 
+    // keep blank rows the user left in the middle on purpose (visual spacers between groups);
+    // only drop the trailing run of untouched placeholder rows fillRows() pads the table with.
+    let lastContentIdx = -1;
+    items.forEach((it, i) => {
+      if (!isRowBlank(it)) lastContentIdx = i;
+    });
     const validItems = items
-      .filter((it) => it.description.trim())
+      .slice(0, lastContentIdx + 1)
       .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
@@ -812,10 +836,15 @@ export function InvoiceForm({
                       />
                     </td>
                     <td className="border border-sky-200 p-0">
-                      <Input
+                      <textarea
                         value={row.description}
-                        onChange={(e) => updateItem(i, "description", e.target.value)}
-                        className="h-7 w-full border-0 bg-transparent text-[12px] focus:ring-0"
+                        onChange={(e) => {
+                          updateItem(i, "description", e.target.value);
+                          autoGrow(e.target);
+                        }}
+                        ref={autoGrow}
+                        rows={1}
+                        className="block min-h-7 w-full resize-none overflow-hidden border-0 bg-transparent px-3 py-1 text-[12px] leading-[1.3] focus:outline-none focus:ring-0"
                       />
                     </td>
                     <td className="border border-sky-200 p-0">

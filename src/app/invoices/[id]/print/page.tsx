@@ -325,7 +325,7 @@ export default async function PrintPage({
             {items.map((it, idx) => (
               <tr key={idx}>
                 <td className="ctr">{it.lineNo ?? ""}</td>
-                <td>{it.description ?? ""}</td>
+                <td className="desc">{it.description ?? ""}</td>
                 <td className="ctr">{it.quantity ? formatMoney(it.quantity, it.quantity % 1 === 0 ? 0 : 2) : ""}</td>
                 <td className="rt">{it.unitPrice ? formatMoney(it.unitPrice) : ""}</td>
                 <td className="rt">{it.amount ? formatMoney(it.amount) : ""}</td>
@@ -658,6 +658,7 @@ export default async function PrintPage({
         .items thead th .ital-en { font-style: italic; font-size: 9px; color: #444; }
         .items .col-no { width: 14mm; text-align: center; }
         .items .col-desc { }
+        .items td.desc { white-space: pre-line; }
         .items .col-qty { width: 22mm; }
         .items .col-price { width: 28mm; }
         .items .col-amt { width: 28mm; }
