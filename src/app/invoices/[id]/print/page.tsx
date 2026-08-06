@@ -658,7 +658,7 @@ export default async function PrintPage({
         .items thead th .ital-en { font-style: italic; font-size: 9px; color: #444; }
         .items .col-no { width: 14mm; text-align: center; }
         .items .col-desc { }
-        .items td.desc { white-space: pre-line; }
+        .items td.desc { white-space: pre-wrap; }
         .items .col-qty { width: 22mm; }
         .items .col-price { width: 28mm; }
         .items .col-amt { width: 28mm; }

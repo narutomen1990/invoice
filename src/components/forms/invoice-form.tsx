@@ -235,6 +235,36 @@ export function InvoiceForm({
 
   const [items, setItems] = useState<ItemRow[]>(fillRows(initial.items));
 
+  // แถวรายการ: Enter เลื่อนไปช่องถัดไปในแถวเดียวกัน (แบบสเปรดชีต) แทนที่จะขึ้นบรรทัดใหม่/ไม่มีผล —
+  // Shift+Enter ในช่องรายการยังคงขึ้นบรรทัดใหม่ได้ตามเดิม
+  const descRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
+  const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const unitRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const priceRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  function focusAndSelect(el: HTMLInputElement | HTMLTextAreaElement | null | undefined) {
+    if (!el) return;
+    el.focus();
+    el.select();
+  }
+
+  function descEnterToNext(e: React.KeyboardEvent<HTMLTextAreaElement>, i: number) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      focusAndSelect(qtyRefs.current[i]);
+    }
+  }
+
+  function fieldEnterToNext(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    next: HTMLInputElement | HTMLTextAreaElement | null | undefined,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      focusAndSelect(next);
+    }
+  }
+
   // ใบที่บันทึกไว้ตอน VAT=0 (ไม่ได้ตั้งใจ) — เปิด popup ให้เลือกครั้งเดียวตอนเข้าหน้าแก้ไข
   const [vatFixOpen, setVatFixOpen] = useState(() => {
     if (mode !== "edit" || initial.vatRate !== 0) return false;
@@ -906,7 +936,11 @@ export function InvoiceForm({
                           updateItem(i, "description", e.target.value);
                           autoGrow(e.target);
                         }}
-                        ref={autoGrow}
+                        onKeyDown={(e) => descEnterToNext(e, i)}
+                        ref={(el) => {
+                          autoGrow(el);
+                          descRefs.current[i] = el;
+                        }}
                         rows={1}
                         className="block min-h-7 w-full resize-none overflow-hidden border-0 bg-transparent px-3 py-1 text-[12px] leading-[1.3] focus:outline-none focus:ring-0"
                       />
@@ -917,6 +951,10 @@ export function InvoiceForm({
                         step="0.001"
                         value={row.quantity}
                         onChange={(e) => updateItem(i, "quantity", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, unitRefs.current[i])}
+                        ref={(el) => {
+                          qtyRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
                       />
                     </td>
@@ -924,6 +962,10 @@ export function InvoiceForm({
                       <Input
                         value={row.unit}
                         onChange={(e) => updateItem(i, "unit", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, priceRefs.current[i])}
+                        ref={(el) => {
+                          unitRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-center text-[11px] focus:ring-0"
                       />
                     </td>
@@ -933,6 +975,10 @@ export function InvoiceForm({
                         step="0.01"
                         value={row.unitPrice}
                         onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, descRefs.current[i + 1])}
+                        ref={(el) => {
+                          priceRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
                       />
                     </td>
