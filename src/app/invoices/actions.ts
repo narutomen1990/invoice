@@ -102,12 +102,17 @@ export async function updateInvoiceAction(id: number, formData: FormData): Promi
     if (!existing) throw new Error("not found");
     if (existing.status === "cancelled") throw new Error("ใบที่ยกเลิกแล้ว แก้ไขไม่ได้");
 
+    // ร่างจาก service-center (สร้างผ่าน external API เสมอเป็น draft ไม่เคย auto-issue)
+    // ถูกตรวจ/แก้ไขแล้วกดบันทึกทับในระบบนี้ ถือว่า "ออกจริง" แล้ว — เลื่อนสถานะให้อัตโนมัติ
+    const newStatus = existing.status === "draft" ? "issued" : existing.status;
+
     // auto-create or match customer if missing
     const { customerId, customerCode } = await ensureCustomer(tx, input);
 
     await tx
       .update(documents)
       .set({
+        status: newStatus,
         docDate: input.docDate,
         dueDate: input.dueDate || null,
         paymentTermsDays: input.paymentTermsDays,
@@ -160,7 +165,11 @@ export async function updateInvoiceAction(id: number, formData: FormData): Promi
       documentId: id,
       action: "update",
       user: session,
-      changes: { total: totals.total, itemCount: input.items.length },
+      changes: {
+        total: totals.total,
+        itemCount: input.items.length,
+        ...(newStatus !== existing.status ? { statusFrom: existing.status, statusTo: newStatus } : {}),
+      },
     });
   });
 
