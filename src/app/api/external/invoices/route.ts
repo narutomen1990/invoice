@@ -119,3 +119,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e?.message ?? "สร้างใบกำกับไม่สำเร็จ" }, { status: 500 });
   }
 }
+
+// ลบใบกำกับ "ร่าง" ที่สร้างจากระบบภายนอก — ใช้ตอนฝั่ง service-center กด
+// "ยกเลิกการผูก" แล้วจะออกใหม่ (เช่น เลือกโหมด VAT ผิดตอนสร้างครั้งแรก)
+// ลบได้เฉพาะ status "draft" เท่านั้น — ใบที่ออกจริง (issued) แล้วห้ามลบผ่าน
+// ทางนี้เด็ดขาด ต้องเข้าไปยกเลิก/แก้ไขในระบบนี้เอง เหมือน deleteInvoiceAction
+// ปกติ (ดู src/app/invoices/actions.ts) — เลขที่ถูกลบจะไม่ถูกเอากลับมาใช้ซ้ำ
+// (ตัว sequence ไม่ถูกแตะ) เป็นช่องว่างที่ตั้งใจทิ้งไว้ ไม่ใช่บั๊ก
+export async function DELETE(req: NextRequest) {
+  const key = process.env.EXTERNAL_API_KEY;
+  const authHeader = req.headers.get("authorization");
+  if (!key || authHeader !== `Bearer ${key}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const externalRef = req.nextUrl.searchParams.get("externalRef");
+  if (!externalRef) {
+    return NextResponse.json({ error: "Missing externalRef" }, { status: 400 });
+  }
+
+  const [doc] = await db
+    .select({ id: documents.id, docNo: documents.docNo, status: documents.status })
+    .from(documents)
+    .where(eq(documents.externalRef, externalRef))
+    .limit(1);
+
+  // ไม่มีอยู่แล้ว (เคยลบไปแล้ว หรือไม่เคยสร้าง) — ถือว่าสำเร็จ ไม่ error (idempotent)
+  if (!doc) {
+    return NextResponse.json({ ok: true, deleted: false });
+  }
+
+  if (doc.status !== "draft") {
+    return NextResponse.json(
+      { error: `เอกสาร ${doc.docNo} ออกจริงแล้ว (status: ${doc.status}) ลบผ่าน API ไม่ได้ ต้องเข้าไปยกเลิก/แก้ไขในระบบใบกำกับภาษีเอง` },
+      { status: 409 }
+    );
+  }
+
+  await db.delete(documents).where(eq(documents.id, doc.id));
+
+  console.log(
+    `[external-invoice-delete] ${doc.docNo} (id=${doc.id}, externalRef=${externalRef}) deleted via external API`
+  );
+
+  return NextResponse.json({ ok: true, deleted: true, docNo: doc.docNo });
+}
