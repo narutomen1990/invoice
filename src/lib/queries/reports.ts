@@ -165,6 +165,7 @@ export type ServiceCenterTaxRow = {
   id: number;
   docNo: string;
   docDate: string;
+  memo: string | null;
   customerName: string | null;
   customerTaxId: string | null;
   customerBranch: string | null;
@@ -216,6 +217,7 @@ export async function getServiceCenterTaxMonthly(opts: {
     id: number;
     doc_no: string;
     doc_date: string;
+    memo: string | null;
     customer_name_snapshot: string | null;
     customer_tax_id_snapshot: string | null;
     customer_branch_snapshot: string | null;
@@ -225,7 +227,7 @@ export async function getServiceCenterTaxMonthly(opts: {
     external_ref: string | null;
     status: string;
   }>(sql`
-    SELECT id, doc_no, doc_date::text,
+    SELECT id, doc_no, doc_date::text, memo,
            customer_name_snapshot, customer_tax_id_snapshot, customer_branch_snapshot,
            amount_before_vat::text, vat_amount::text, total::text,
            external_ref, status
@@ -249,6 +251,7 @@ export async function getServiceCenterTaxMonthly(opts: {
       id: Number(r.id),
       docNo: r.doc_no,
       docDate: r.doc_date,
+      memo: r.memo,
       customerName: r.customer_name_snapshot,
       customerTaxId: r.customer_tax_id_snapshot,
       customerBranch: r.customer_branch_snapshot,

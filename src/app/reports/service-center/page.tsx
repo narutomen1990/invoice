@@ -169,6 +169,7 @@ export default async function ServiceCenterTaxPage({
                           </th>
                           <th className="px-3 py-2.5 font-medium">สถานะ</th>
                           <th className="px-3 py-2.5 font-medium">วันที่</th>
+                          <th className="px-3 py-2.5 font-medium">หมายเหตุภายใน</th>
                           <th className="px-3 py-2.5 font-medium">เลขที่</th>
                           <th className="px-3 py-2.5 font-medium">ชื่อลูกค้า</th>
                           <th className="px-3 py-2.5 font-medium">เลขผู้เสียภาษี</th>
@@ -204,6 +205,9 @@ export default async function ServiceCenterTaxPage({
                               </td>
                               <td className="px-3 py-2 text-zinc-600 whitespace-nowrap">
                                 {formatThaiDateShort(r.docDate)}
+                              </td>
+                              <td className="px-3 py-2 font-mono text-xs text-zinc-600">
+                                {r.memo ?? "-"}
                               </td>
                               <td className="px-3 py-2 font-mono text-xs">
                                 <Link
@@ -243,7 +247,7 @@ export default async function ServiceCenterTaxPage({
                       </tbody>
                       <tfoot className="border-t bg-zinc-50 text-sm">
                         <tr className="font-semibold">
-                          <td colSpan={8} className="px-3 py-2 text-right">
+                          <td colSpan={9} className="px-3 py-2 text-right">
                             รวม {result.summary.count.toLocaleString()} ใบ
                           </td>
                           <td className="px-3 py-2 text-right tabular-nums">

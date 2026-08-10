@@ -70,6 +70,7 @@ export async function GET(req: Request) {
     "ลำดับ",
     "สถานะ",
     "วันที่",
+    "หมายเหตุภายใน",
     "เลขที่ใบกำกับ",
     "ชื่อลูกค้า",
     "เลขผู้เสียภาษี",
@@ -115,6 +116,7 @@ export async function GET(req: Request) {
     xlRow.getCell(c++).value = idx + 1;
     xlRow.getCell(c++).value = STATUS_LABELS[row.status] ?? row.status;
     xlRow.getCell(c++).value = formatThaiDateShort(row.docDate);
+    xlRow.getCell(c++).value = row.memo ?? "";
     xlRow.getCell(c++).value = row.docNo;
     xlRow.getCell(c++).value = row.customerName ?? "";
     xlRow.getCell(c++).value = row.customerTaxId ?? "";
@@ -127,9 +129,9 @@ export async function GET(req: Request) {
     xlRow.getCell(1).alignment = center;
     xlRow.getCell(2).alignment = center;
     xlRow.getCell(3).alignment = center;
-    xlRow.getCell(4).alignment = center;
-    xlRow.getCell(6).alignment = center;
+    xlRow.getCell(5).alignment = center;
     xlRow.getCell(7).alignment = center;
+    xlRow.getCell(8).alignment = center;
     xlRow.getCell(COL_ABV).numFmt = "#,##0.00;-#,##0.00";
     xlRow.getCell(COL_VAT).numFmt = "#,##0.00;-#,##0.00";
     xlRow.getCell(COL_TOT).numFmt = "#,##0.00;-#,##0.00";
@@ -161,7 +163,7 @@ export async function GET(req: Request) {
   }
 
   // Column widths
-  const widths = [6, 10, 12, 18, 38, 16, 14, 20, 16, 14, 16];
+  const widths = [6, 10, 12, 16, 18, 38, 16, 14, 20, 16, 14, 16];
   widths.forEach((w, i) => {
     ws.getColumn(i + 1).width = w;
   });
