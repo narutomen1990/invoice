@@ -10,6 +10,7 @@ import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort } from "@/lib/thai/date";
 import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picker";
 import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
+import { InvoiceStatusSelect } from "@/components/forms/invoice-status-select";
 import { deleteInvoiceAction } from "@/app/invoices/actions";
 
 export type InvoiceRow = {
@@ -315,7 +316,7 @@ export function InvoiceTableWithDetail({
       {/* Detail panel — spans both columns */}
       {selected && (
         <div className="lg:col-span-2">
-          <DetailPanel inv={selected} />
+          <DetailPanel inv={selected} role={role} />
         </div>
       )}
 
@@ -335,7 +336,7 @@ export function InvoiceTableWithDetail({
   );
 }
 
-function DetailPanel({ inv }: { inv: InvoiceRow }) {
+function DetailPanel({ inv, role }: { inv: InvoiceRow; role?: string }) {
   const addrLine = (inv.customerAddress ?? "").replace(/\n/g, " ");
   const ar = arStatusMeta(inv.arStatus);
 
@@ -387,11 +388,15 @@ function DetailPanel({ inv }: { inv: InvoiceRow }) {
             <div className="text-[10px] text-rose-700">Invoice :</div>
             <div className="flex items-center gap-1.5">
               <span className="font-mono font-bold text-rose-900">{inv.docNo}</span>
-              <span
-                className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${docStatusMeta(inv.status).cls}`}
-              >
-                {docStatusMeta(inv.status).th}
-              </span>
+              {role === "admin" ? (
+                <InvoiceStatusSelect id={inv.id} docNo={inv.docNo} status={inv.status} />
+              ) : (
+                <span
+                  className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${docStatusMeta(inv.status).cls}`}
+                >
+                  {docStatusMeta(inv.status).th}
+                </span>
+              )}
             </div>
           </div>
           <div>

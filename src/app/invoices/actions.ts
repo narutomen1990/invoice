@@ -212,6 +212,61 @@ export async function cancelInvoiceAction(id: number, reason?: string): Promise<
   return { ok: true };
 }
 
+const DOC_STATUS_VALUES = ["draft", "issued", "cancelled", "voided"] as const;
+type DocStatusValue = (typeof DOC_STATUS_VALUES)[number];
+
+/** Admin-only override to move an invoice to any status directly (fixes mistaken
+ * cancellations, corrects service-center drafts stuck as draft, etc). Unlike
+ * cancelInvoiceAction this isn't restricted to a single from→to transition. */
+export async function updateInvoiceStatusAction(
+  id: number,
+  newStatus: string,
+): Promise<{ error?: string; ok?: boolean }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") {
+    return { error: "เฉพาะ admin เท่านั้นที่เปลี่ยนสถานะได้" };
+  }
+  if (!DOC_STATUS_VALUES.includes(newStatus as DocStatusValue)) {
+    return { error: "สถานะไม่ถูกต้อง" };
+  }
+  const status = newStatus as DocStatusValue;
+
+  await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select({ status: documents.status })
+      .from(documents)
+      .where(eq(documents.id, id))
+      .limit(1);
+    if (!existing) throw new Error("ไม่พบใบกำกับนี้");
+    if (existing.status === status) return;
+
+    const wasClosed = existing.status === "cancelled" || existing.status === "voided";
+    const isClosed = status === "cancelled" || status === "voided";
+
+    await tx
+      .update(documents)
+      .set({
+        status,
+        ...(isClosed ? { arStatus: "cancelled" as const } : wasClosed ? { arStatus: "pending" as const } : {}),
+        updatedByUserId: session.userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(documents.id, id));
+
+    await writeJournal(tx as any, {
+      documentId: id,
+      action: "update",
+      user: session,
+      changes: { statusFrom: existing.status, statusTo: status },
+    });
+  });
+
+  revalidatePath(`/invoices/${id}`);
+  revalidatePath("/invoices");
+  return { ok: true };
+}
+
 /**
  * Permanently deletes an invoice record (document_items and document_journals
  * cascade with it). Unlike cancelInvoiceAction, this does NOT touch the
