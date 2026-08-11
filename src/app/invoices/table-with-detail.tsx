@@ -11,6 +11,7 @@ import { formatThaiDateShort } from "@/lib/thai/date";
 import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picker";
 import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
 import { InvoiceStatusSelect } from "@/components/forms/invoice-status-select";
+import { InvoiceExternalRefEditor } from "@/components/forms/invoice-external-ref-editor";
 import { deleteInvoiceAction } from "@/app/invoices/actions";
 
 export type InvoiceRow = {
@@ -373,11 +374,15 @@ function DetailPanel({ inv, role }: { inv: InvoiceRow; role?: string }) {
             {formatThaiDateTime(inv.updatedAt)}
           </span>
         </div>
-        {inv.externalRef && (
-          <div className="border-t border-cyan-200 bg-indigo-50 px-3 py-1.5 text-[11px] text-indigo-800">
-            📥 รับข้อมูลมาจาก service-center —{" "}
-            <span className="font-mono">{inv.externalRef}</span>
-          </div>
+        {role === "admin" ? (
+          <InvoiceExternalRefEditor id={inv.id} docNo={inv.docNo} externalRef={inv.externalRef} />
+        ) : (
+          inv.externalRef && (
+            <div className="border-t border-cyan-200 bg-indigo-50 px-3 py-1.5 text-[11px] text-indigo-800">
+              📥 รับข้อมูลมาจาก service-center —{" "}
+              <span className="font-mono">{inv.externalRef}</span>
+            </div>
+          )
         )}
       </div>
 

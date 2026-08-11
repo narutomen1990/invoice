@@ -267,6 +267,59 @@ export async function updateInvoiceStatusAction(
   return { ok: true };
 }
 
+/** Admin-only: manually attach/change/remove the service-center reference on
+ * an invoice that wasn't created through the external API — e.g. to make a
+ * plain invoice for a repair job show up in "รายงานภาษีงานซ่อม" (which is
+ * driven entirely by externalRef being non-null), even without a real
+ * job/ticket ID from that system. Pass null/empty to unlink. */
+export async function updateInvoiceExternalRefAction(
+  id: number,
+  externalRef: string | null,
+): Promise<{ error?: string; ok?: boolean }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") {
+    return { error: "เฉพาะ admin เท่านั้นที่แก้ไขได้" };
+  }
+  const trimmed = externalRef?.trim() || null;
+  if (trimmed && trimmed.length > 100) {
+    return { error: "เลขอ้างอิงยาวเกินไป (สูงสุด 100 ตัวอักษร)" };
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ externalRef: documents.externalRef })
+        .from(documents)
+        .where(eq(documents.id, id))
+        .limit(1);
+      if (!existing) throw new Error("ไม่พบใบกำกับนี้");
+      if (existing.externalRef === trimmed) return;
+
+      await tx
+        .update(documents)
+        .set({ externalRef: trimmed, updatedByUserId: session.userId, updatedAt: new Date() })
+        .where(eq(documents.id, id));
+
+      await writeJournal(tx as any, {
+        documentId: id,
+        action: "update",
+        user: session,
+        changes: { externalRefFrom: existing.externalRef, externalRefTo: trimmed },
+      });
+    });
+  } catch (e: any) {
+    if (e?.code === "23505") {
+      return { error: `เลขอ้างอิง "${trimmed}" ถูกใช้กับใบกำกับอื่นแล้ว — กรุณาใช้เลขอื่น` };
+    }
+    return { error: e?.message ?? "บันทึกไม่สำเร็จ" };
+  }
+
+  revalidatePath(`/invoices/${id}`);
+  revalidatePath("/invoices");
+  return { ok: true };
+}
+
 /**
  * Permanently deletes an invoice record (document_items and document_journals
  * cascade with it). Unlike cancelInvoiceAction, this does NOT touch the
