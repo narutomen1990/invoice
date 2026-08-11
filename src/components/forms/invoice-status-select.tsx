@@ -4,11 +4,12 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateInvoiceStatusAction } from "@/app/invoices/actions";
 
-const STATUS_OPTIONS: { value: string; th: string }[] = [
-  { value: "draft", th: "ร่าง" },
-  { value: "issued", th: "ออกแล้ว" },
-  { value: "cancelled", th: "ยกเลิก" },
-  { value: "voided", th: "โมฆะ" },
+// Only invoices sourced from service-center can be draft — this control lets
+// admin flip such an invoice between its draft and issued state directly.
+// Cancel/void go through the dedicated "ยกเลิกใบ" button instead.
+const SC_OPTIONS: { value: string; th: string }[] = [
+  { value: "draft", th: "ร่าง service-center" },
+  { value: "issued", th: "ออกแล้ว service-center" },
 ];
 
 export function InvoiceStatusSelect({
@@ -28,7 +29,7 @@ export function InvoiceStatusSelect({
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const next = e.target.value;
     if (next === status) return;
-    const label = STATUS_OPTIONS.find((o) => o.value === next)?.th ?? next;
+    const label = SC_OPTIONS.find((o) => o.value === next)?.th ?? next;
     if (!confirm(`เปลี่ยนสถานะใบ ${docNo} เป็น "${label}"?`)) {
       e.target.value = status;
       return;
@@ -52,7 +53,7 @@ export function InvoiceStatusSelect({
       title="Admin: เปลี่ยนสถานะใบกำกับ"
       className={`rounded border border-zinc-300 bg-white px-1 py-0.5 text-[10px] font-medium disabled:opacity-50 ${className ?? ""}`}
     >
-      {STATUS_OPTIONS.map((o) => (
+      {SC_OPTIONS.map((o) => (
         <option key={o.value} value={o.value}>
           {o.th}
         </option>

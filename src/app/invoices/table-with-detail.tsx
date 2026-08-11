@@ -388,7 +388,9 @@ function DetailPanel({ inv, role }: { inv: InvoiceRow; role?: string }) {
             <div className="text-[10px] text-rose-700">Invoice :</div>
             <div className="flex items-center gap-1.5">
               <span className="font-mono font-bold text-rose-900">{inv.docNo}</span>
-              {role === "admin" ? (
+              {role === "admin" &&
+              !!inv.externalRef &&
+              (inv.status === "draft" || inv.status === "issued") ? (
                 <InvoiceStatusSelect id={inv.id} docNo={inv.docNo} status={inv.status} />
               ) : (
                 <span
