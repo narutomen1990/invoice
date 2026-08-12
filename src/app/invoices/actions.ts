@@ -393,33 +393,56 @@ export async function updateInvoiceDocNoAction(
 
 /**
  * Permanently deletes an invoice record (document_items and document_journals
- * cascade with it). Unlike cancelInvoiceAction, this does NOT touch the
- * counters table — the doc_no is intentionally left as a gap in the
- * sequence, findable later via the "รายงานเลขที่ขาดหาย" report so it can be
- * re-issued or accounted for. Tax invoice numbers must never be silently
- * reused; a real number that once existed just becomes a documented skip.
+ * cascade with it). If the deleted doc_no is still the tail of its month's
+ * counter (i.e. nothing was issued after it), the counter is atomically
+ * decremented so the next invoice reclaims that exact number — safe because
+ * nothing could possibly collide with a number nobody has taken yet. If it's
+ * NOT the tail (something newer already exists), the counter is left alone
+ * and the doc_no becomes a documented gap, findable via "รายงานเลขที่ขาดหาย"
+ * — tax invoice numbers must never be silently reused once something has
+ * been issued after them.
  */
-export async function deleteInvoiceAction(id: number): Promise<{ error?: string; ok?: boolean }> {
+export async function deleteInvoiceAction(id: number): Promise<{ error?: string; ok?: boolean; reclaimedDocNo?: string }> {
   const session = await getSession();
   if (!session) return { error: "session หมดอายุ" };
   if (session.role !== "admin" && session.role !== "manager") {
     return { error: "เฉพาะ admin หรือ manager เท่านั้นที่ลบได้" };
   }
 
-  const [doc] = await db
-    .delete(documents)
-    .where(eq(documents.id, id))
-    .returning({ id: documents.id, docNo: documents.docNo });
+  let reclaimedDocNo: string | undefined;
 
-  if (!doc) return { error: "ไม่พบใบกำกับนี้ (อาจถูกลบไปแล้ว)" };
+  try {
+    await db.transaction(async (tx) => {
+      const [doc] = await tx
+        .delete(documents)
+        .where(eq(documents.id, id))
+        .returning({ id: documents.id, docNo: documents.docNo });
 
-  console.log(
-    `[invoice-delete] ${doc.docNo} (id=${id}) deleted by ${session.username} (userId=${session.userId})`,
-  );
+      if (!doc) throw new Error("ไม่พบใบกำกับนี้ (อาจถูกลบไปแล้ว)");
+
+      const parts = parseDocNo(doc.docNo);
+      if (parts) {
+        const key = `invoice:${parts.yearBe}:${parts.month}`;
+        const [reclaimed] = await tx.execute<{ current_value: number }>(sql`
+          UPDATE counters SET current_value = current_value - 1, updated_at = now()
+           WHERE key = ${key} AND current_value = ${parts.value}
+          RETURNING current_value
+        `);
+        if (reclaimed) reclaimedDocNo = doc.docNo;
+      }
+
+      console.log(
+        `[invoice-delete] ${doc.docNo} (id=${id}) deleted by ${session.username} (userId=${session.userId})` +
+          (reclaimedDocNo ? ` — counter reclaimed` : ""),
+      );
+    });
+  } catch (e: any) {
+    return { error: e?.message ?? "ลบไม่สำเร็จ" };
+  }
 
   revalidatePath("/invoices");
   revalidatePath("/");
-  return { ok: true };
+  return { ok: true, reclaimedDocNo };
 }
 
 export async function lookupCustomerByCodeAction(code: string): Promise<{

@@ -258,8 +258,9 @@ export function InvoiceTableWithDetail({
               if (
                 !confirm(
                   `ลบใบกำกับ ${selected.docNo} ของ ${selected.customerName ?? ""} ถาวร?\n\n` +
-                    `Record จะหายไปจากระบบ แต่เลขที่ ${selected.docNo} จะไม่ถูกนำไปใช้ซ้ำ ` +
-                    `— จะกลายเป็นเลขที่เว้นว่าง สามารถดูได้ที่ "รายงานเลขที่ขาดหาย" เพื่อนำมาใส่ทีหลังได้`,
+                    `Record จะหายไปจากระบบ — ถ้าเป็นเลขล่าสุดของเดือนนั้น (ยังไม่มีใบอื่นออกเลขถัดไป) ` +
+                    `ตัวนับจะถอยกลับให้อัตโนมัติ เลขนี้จะกลับมาใช้ได้ในใบถัดไป ` +
+                    `แต่ถ้าไม่ใช่เลขล่าสุด จะกลายเป็นเลขที่เว้นว่าง ดูได้ที่ "รายงานเลขที่ขาดหาย"`,
                 )
               ) {
                 return;
@@ -269,6 +270,9 @@ export function InvoiceTableWithDetail({
                 if (res.error) {
                   alert(res.error);
                 } else {
+                  if (res.reclaimedDocNo) {
+                    alert(`ลบสำเร็จ — เลขที่ ${res.reclaimedDocNo} ถูกคืนกลับ ใบถัดไปจะได้เลขนี้อีกครั้ง`);
+                  }
                   router.refresh();
                 }
               });
