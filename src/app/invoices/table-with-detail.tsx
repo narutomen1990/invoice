@@ -12,6 +12,7 @@ import { InvoicePrintPickerDialog } from "@/components/forms/invoice-print-picke
 import { MissingDocNoDialog } from "@/components/forms/missing-docno-dialog";
 import { InvoiceStatusSelect } from "@/components/forms/invoice-status-select";
 import { InvoiceExternalRefEditor } from "@/components/forms/invoice-external-ref-editor";
+import { InvoiceDocNoEditor } from "@/components/forms/invoice-docno-editor";
 import { deleteInvoiceAction } from "@/app/invoices/actions";
 
 export type InvoiceRow = {
@@ -340,6 +341,8 @@ export function InvoiceTableWithDetail({
 function DetailPanel({ inv, role }: { inv: InvoiceRow; role?: string }) {
   const addrLine = (inv.customerAddress ?? "").replace(/\n/g, " ");
   const ar = arStatusMeta(inv.arStatus);
+  const canEditSc =
+    role === "admin" && !!inv.externalRef && (inv.status === "draft" || inv.status === "issued");
 
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_440px]">
@@ -393,9 +396,8 @@ function DetailPanel({ inv, role }: { inv: InvoiceRow; role?: string }) {
             <div className="text-[10px] text-rose-700">Invoice :</div>
             <div className="flex items-center gap-1.5">
               <span className="font-mono font-bold text-rose-900">{inv.docNo}</span>
-              {role === "admin" &&
-              !!inv.externalRef &&
-              (inv.status === "draft" || inv.status === "issued") ? (
+              {canEditSc && <InvoiceDocNoEditor id={inv.id} docNo={inv.docNo} />}
+              {canEditSc ? (
                 <InvoiceStatusSelect id={inv.id} docNo={inv.docNo} status={inv.status} />
               ) : (
                 <span

@@ -5,7 +5,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { documents, documentItems } from "@/db/schema";
 import { getSession } from "@/lib/auth/session";
-import { parseDocNo, buildDocNo } from "@/lib/counter";
+import { parseDocNo, buildDocNo, useCustomDocNo } from "@/lib/counter";
 import { writeJournal } from "@/lib/audit";
 import { bahtText } from "@/lib/thai/number";
 import {
@@ -318,6 +318,77 @@ export async function updateInvoiceExternalRefAction(
   revalidatePath(`/invoices/${id}`);
   revalidatePath("/invoices");
   return { ok: true };
+}
+
+/** Admin-only: correct the doc_no on an invoice that originated from
+ * service-center (externalRef set) — the number service-center's own POST
+ * auto-reserves at draft time doesn't always match what should actually be
+ * printed, and until now there was no way to fix it short of delete+recreate.
+ * Scoped to externalRef-having invoices only; not for plain in-app invoices.
+ * Bumps the month's counter forward so future auto-numbers don't collide. */
+export async function updateInvoiceDocNoAction(
+  id: number,
+  newDocNo: string,
+): Promise<{ error?: string; ok?: boolean; docNo?: string }> {
+  const session = await getSession();
+  if (!session) return { error: "session หมดอายุ" };
+  if (session.role !== "admin") {
+    return { error: "เฉพาะ admin เท่านั้นที่แก้ไขเลขที่ได้" };
+  }
+
+  const trimmed = newDocNo.trim();
+  const parts = parseDocNo(trimmed);
+  if (!parts) {
+    return { error: `รูปแบบเลขที่เอกสารไม่ถูกต้อง: "${trimmed}" — ต้องเป็นรูป IV69/05-17805` };
+  }
+
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select({ docNo: documents.docNo, status: documents.status, externalRef: documents.externalRef })
+        .from(documents)
+        .where(eq(documents.id, id))
+        .limit(1);
+      if (!existing) throw new Error("ไม่พบใบกำกับนี้");
+      if (!existing.externalRef) {
+        throw new Error("แก้เลขที่ได้เฉพาะใบที่มาจาก service-center เท่านั้น");
+      }
+      if (existing.status === "cancelled" || existing.status === "voided") {
+        throw new Error("ใบที่ยกเลิก/โมฆะแล้ว แก้เลขที่ไม่ได้");
+      }
+      if (existing.docNo === trimmed) return { docNo: existing.docNo };
+
+      await useCustomDocNo(tx as any, { documentType: "invoice", customDocNo: trimmed });
+
+      await tx
+        .update(documents)
+        .set({
+          docNo: trimmed,
+          internalSeq: `${parts.yearBe}${parts.month}${String(parts.value).padStart(5, "0")}`,
+          updatedByUserId: session.userId,
+          updatedAt: new Date(),
+        })
+        .where(eq(documents.id, id));
+
+      await writeJournal(tx as any, {
+        documentId: id,
+        action: "update",
+        user: session,
+        changes: { docNoFrom: existing.docNo, docNoTo: trimmed },
+      });
+
+      return { docNo: trimmed };
+    });
+
+    revalidatePath(`/invoices/${id}`);
+    revalidatePath("/invoices");
+    return { ok: true, docNo: result.docNo };
+  } catch (e: any) {
+    if (e?.code === "23505") {
+      return { error: `เลขที่เอกสาร "${trimmed}" ซ้ำในระบบ — กรุณาเปลี่ยนเลข` };
+    }
+    return { error: e?.message ?? "บันทึกไม่สำเร็จ" };
+  }
 }
 
 /**
