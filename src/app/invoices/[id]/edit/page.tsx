@@ -34,6 +34,13 @@ export default async function EditInvoicePage({
   if (!data) notFound();
   const { doc, items } = data;
 
+  // ใบที่ยังไม่มีพนักงานขาย (เช่น draft จาก service-center) — ถ้าคนที่แก้ไขเป็น
+  // staff ให้เติมชื่อเต็มของตัวเองให้อัตโนมัติ เพราะช่องนี้ถูกล็อกแก้ไขเองไม่ได้
+  // (ดู lockSalesman ด้านล่าง) ถ้ามีชื่อเดิมอยู่แล้วให้คงไว้ตามเดิม ไม่ทับ
+  const myName = session?.fullName?.trim() || session?.username || null;
+  const salemanName =
+    doc.salemanName?.trim() || (session?.role === "staff" ? myName : doc.salemanName);
+
   if (doc.status === "cancelled") {
     return (
       <AppShell>
@@ -76,7 +83,7 @@ export default async function EditInvoicePage({
             customerAddress: doc.customerAddress,
             customerTel: doc.customerTel,
             customerProvince: doc.customerProvince,
-            salemanName: doc.salemanName,
+            salemanName,
             shippingMethod: doc.shippingMethod,
             referenceQuotationNo: doc.referenceQuotationNo,
             discount: doc.discount,
