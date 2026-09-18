@@ -15,6 +15,7 @@ export type DashboardStats = {
     total: number;
     vat: number;
     serviceCenter: {
+      monthLabel: string;
       count: number;
       total: number;
       vat: number;
@@ -71,7 +72,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     vat: 0,
     monthStart: "",
     monthLabel: "",
-    serviceCenter: { count: 0, total: 0, vat: 0 },
+    serviceCenter: { monthLabel: "", count: 0, total: 0, vat: 0 },
   };
   let prevRow = { count: 0, total: 0 };
   if (latestDate) {
@@ -93,19 +94,33 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     curRow.total = Number(cur.t);
     curRow.vat = Number(cur.v);
 
-    const [sc] = await db.execute<{ n: string; t: string; v: string }>(sql`
-      SELECT COUNT(*)::text n,
-             COALESCE(SUM(total),0)::text t,
-             COALESCE(SUM(vat_amount),0)::text v
-        FROM documents
-       WHERE document_type='invoice'
-         AND external_ref IS NOT NULL
-         AND doc_date >= ${monthStart}::date
-         AND doc_date < (${monthStart}::date + INTERVAL '1 month')
+    // Service-center's "current month" is anchored to the latest SC invoice
+    // specifically, not the latest invoice overall (same convention as
+    // "รายงานภาษีงานซ่อม รายเดือน") — otherwise, whenever the newest invoice
+    // in the whole system happens to be a plain (non-SC) one, this card would
+    // silently show ฿0.00 even though the SC month just hasn't "advanced" yet.
+    const [scLatest] = await db.execute<{ d: string | null }>(sql`
+      SELECT MAX(doc_date)::text AS d FROM documents
+       WHERE document_type='invoice' AND external_ref IS NOT NULL
     `);
-    curRow.serviceCenter.count = Number(sc.n);
-    curRow.serviceCenter.total = Number(sc.t);
-    curRow.serviceCenter.vat = Number(sc.v);
+    if (scLatest?.d) {
+      const [scY, scM] = scLatest.d.split("-");
+      const scMonthStart = `${scY}-${scM}-01`;
+      curRow.serviceCenter.monthLabel = `${THAI_MONTHS[parseInt(scM!, 10)]} ${scY}`;
+      const [sc] = await db.execute<{ n: string; t: string; v: string }>(sql`
+        SELECT COUNT(*)::text n,
+               COALESCE(SUM(total),0)::text t,
+               COALESCE(SUM(vat_amount),0)::text v
+          FROM documents
+         WHERE document_type='invoice'
+           AND external_ref IS NOT NULL
+           AND doc_date >= ${scMonthStart}::date
+           AND doc_date < (${scMonthStart}::date + INTERVAL '1 month')
+      `);
+      curRow.serviceCenter.count = Number(sc.n);
+      curRow.serviceCenter.total = Number(sc.t);
+      curRow.serviceCenter.vat = Number(sc.v);
+    }
 
     const [prev] = await db.execute<{ n: string; t: string }>(sql`
       SELECT COUNT(*)::text n, COALESCE(SUM(total),0)::text t

@@ -126,7 +126,8 @@ export default async function HomePage() {
                 ฿{formatMoney(s.current.serviceCenter.total)}
               </div>
               <div className="text-xs text-indigo-700/70">
-                {s.current.serviceCenter.count} ใบ · งานซ่อมจาก service-center
+                {s.current.serviceCenter.count} ใบ · เดือน{" "}
+                {s.current.serviceCenter.monthLabel || "-"}
               </div>
             </CardContent>
           </Card>
@@ -142,7 +143,9 @@ export default async function HomePage() {
               <div className="text-2xl font-bold text-indigo-900">
                 ฿{formatMoney(s.current.serviceCenter.vat)}
               </div>
-              <div className="text-xs text-indigo-700/70">7%</div>
+              <div className="text-xs text-indigo-700/70">
+                7% · เดือน {s.current.serviceCenter.monthLabel || "-"}
+              </div>
             </CardContent>
           </Card>
         </div>
