@@ -129,6 +129,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }));
 
   // ===== top customers (this year) =====
+  // Grouped by name only (trimmed), not name+tax_id — service-center invoices
+  // don't always include a tax ID, so grouping by both used to split one
+  // customer's revenue across a "with tax ID" row and a "without" row,
+  // silently keeping frequent repeat customers off the Top 10 even when
+  // their combined total would qualify.
   const yearStart = latestDate ? `${latestDate.slice(0, 4)}-01-01` : "1900-01-01";
   const topCustomersRaw = await db.execute<{
     name: string;
@@ -136,14 +141,15 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     n: string;
     t: string;
   }>(sql`
-    SELECT customer_name_snapshot AS name,
-           customer_tax_id_snapshot AS tax_id,
+    SELECT TRIM(customer_name_snapshot) AS name,
+           MAX(customer_tax_id_snapshot) AS tax_id,
            COUNT(*)::text AS n,
            COALESCE(SUM(total),0)::text AS t
       FROM documents
      WHERE document_type='invoice'
        AND doc_date >= ${yearStart}::date
-     GROUP BY name, tax_id
+       AND TRIM(COALESCE(customer_name_snapshot, '')) <> ''
+     GROUP BY TRIM(customer_name_snapshot)
      ORDER BY SUM(total) DESC NULLS LAST
      LIMIT 10
   `);
