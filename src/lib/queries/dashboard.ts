@@ -14,6 +14,11 @@ export type DashboardStats = {
     count: number;
     total: number;
     vat: number;
+    serviceCenter: {
+      count: number;
+      total: number;
+      vat: number;
+    };
   };
   previous: {
     count: number;
@@ -60,7 +65,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   `);
 
   // ===== current month + previous month =====
-  let curRow = { count: 0, total: 0, vat: 0, monthStart: "", monthLabel: "" };
+  let curRow = {
+    count: 0,
+    total: 0,
+    vat: 0,
+    monthStart: "",
+    monthLabel: "",
+    serviceCenter: { count: 0, total: 0, vat: 0 },
+  };
   let prevRow = { count: 0, total: 0 };
   if (latestDate) {
     const [y, m] = latestDate.split("-");
@@ -80,6 +92,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     curRow.count = Number(cur.n);
     curRow.total = Number(cur.t);
     curRow.vat = Number(cur.v);
+
+    const [sc] = await db.execute<{ n: string; t: string; v: string }>(sql`
+      SELECT COUNT(*)::text n,
+             COALESCE(SUM(total),0)::text t,
+             COALESCE(SUM(vat_amount),0)::text v
+        FROM documents
+       WHERE document_type='invoice'
+         AND external_ref IS NOT NULL
+         AND doc_date >= ${monthStart}::date
+         AND doc_date < (${monthStart}::date + INTERVAL '1 month')
+    `);
+    curRow.serviceCenter.count = Number(sc.n);
+    curRow.serviceCenter.total = Number(sc.t);
+    curRow.serviceCenter.vat = Number(sc.v);
 
     const [prev] = await db.execute<{ n: string; t: string }>(sql`
       SELECT COUNT(*)::text n, COALESCE(SUM(total),0)::text t

@@ -6,6 +6,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Wrench,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -107,6 +108,41 @@ export default async function HomePage() {
                 <Package className="h-3 w-3" />
                 {s.totals.products} รายการสินค้า
               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ===== Service-center (งานซ่อม) KPI cards ===== */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <Card className="border-indigo-200 bg-indigo-50/40">
+            <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-indigo-700">
+                ยอดเดือนนี้ (service-center)
+              </CardTitle>
+              <Wrench className="h-4 w-4 text-indigo-400" />
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className="text-2xl font-bold text-indigo-900">
+                ฿{formatMoney(s.current.serviceCenter.total)}
+              </div>
+              <div className="text-xs text-indigo-700/70">
+                {s.current.serviceCenter.count} ใบ · งานซ่อมจาก service-center
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-indigo-200 bg-indigo-50/40">
+            <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-medium text-indigo-700">
+                VAT เดือนนี้ (service-center)
+              </CardTitle>
+              <Wrench className="h-4 w-4 text-indigo-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-indigo-900">
+                ฿{formatMoney(s.current.serviceCenter.vat)}
+              </div>
+              <div className="text-xs text-indigo-700/70">7%</div>
             </CardContent>
           </Card>
         </div>
