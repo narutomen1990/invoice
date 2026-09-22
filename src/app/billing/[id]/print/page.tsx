@@ -34,6 +34,9 @@ export default async function PrintBillingPage({
   const { id } = await params;
   const sp = await searchParams;
   const isCopy = sp.copy === "1";
+  // "ใบแจ้งหนี้" การ์ดแรกในตัวเลือกพิมพ์ vs "ใบแจ้งหนี้/ใบวางบิล" การ์ดที่สอง
+  // (ดู BillingFormPrintPickerDialog) — เอกสารเดียวกัน แค่หัวเรื่องต่างกัน
+  const docTitle = sp.form === "billing" ? "ใบแจ้งหนี้/ใบวางบิล" : "ใบแจ้งหนี้";
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
   const data = await getInvoiceById(numId);
@@ -133,7 +136,7 @@ export default async function PrintBillingPage({
 
         {/* TITLE */}
         <div className="title-block">
-          <div className="title-th">ใบแจ้งหนี้</div>
+          <div className="title-th">{docTitle}</div>
         </div>
 
         {/* TAX RATE row */}
