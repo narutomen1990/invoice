@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Trash2, Printer } from "lucide-react";
+import { Trash2, Printer, FilePlus2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/lib/thai/number";
 import { formatThaiDateShort } from "@/lib/thai/date";
@@ -115,6 +115,21 @@ export function BillingTableWithDetail({
       {(topActions || rows.length > 0) && (
         <div className="flex items-center gap-2">
           {topActions}
+          <Link
+            href={selected ? `/invoices/new?fromBilling=${selected.id}` : "#"}
+            aria-disabled={!selected}
+            title={
+              selected
+                ? `ออกใบกำกับจากใบแจ้งหนี้ ${selected.docNo}`
+                : "เลือกแถวในตารางก่อน"
+            }
+            className={`flex items-center gap-1 rounded-md border border-emerald-700 bg-gradient-to-b from-emerald-500 to-emerald-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition active:translate-y-px hover:from-emerald-600 hover:to-emerald-700 ${
+              !selected ? "pointer-events-none cursor-not-allowed opacity-50" : ""
+            }`}
+          >
+            <FilePlus2 className="h-4 w-4" />
+            ออกใบกำกับจากใบนี้
+          </Link>
           <button
             type="button"
             onClick={handleDelete}
