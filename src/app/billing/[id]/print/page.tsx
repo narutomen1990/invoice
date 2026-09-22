@@ -133,7 +133,7 @@ export default async function PrintBillingPage({
 
         {/* TITLE */}
         <div className="title-block">
-          <div className="title-th">ใบแจ้งหนี้ / INVOICE</div>
+          <div className="title-th">ใบแจ้งหนี้</div>
         </div>
 
         {/* TAX RATE row */}
@@ -202,7 +202,7 @@ export default async function PrintBillingPage({
                 </div>
               </div>
               <div className="doc-cell">
-                <div className="doc-lbl">เลขที่ใบแจ้งหนี้ / INVOICE No.</div>
+                <div className="doc-lbl">เลขที่ใบแจ้งหนี้</div>
                 <div className="doc-val mono bold">{doc.docNo}</div>
               </div>
               <div className="doc-cell doc-cell-full">
