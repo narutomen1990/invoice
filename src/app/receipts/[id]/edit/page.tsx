@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { BillingSlipForm } from "@/components/forms/billing-slip-form";
-import { getCustomerOptions } from "@/lib/queries/form-data";
+import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
 import { db } from "@/db/client";
 
 export const dynamic = "force-dynamic";
@@ -53,9 +53,10 @@ export default async function EditBillingSlipPage({
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
 
-  const [data, customers] = await Promise.all([
+  const [data, customers, products] = await Promise.all([
     getBillingForEdit(numId),
     getCustomerOptions(),
+    getProductOptions(),
   ]);
 
   if (!data) notFound();
@@ -90,6 +91,7 @@ export default async function EditBillingSlipPage({
         <BillingSlipForm
           mode="edit"
           customers={customers}
+          products={products}
           initial={{
             id: Number(doc.id),
             docNo: doc.doc_no,

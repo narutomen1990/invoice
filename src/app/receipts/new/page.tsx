@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { BillingSlipForm } from "@/components/forms/billing-slip-form";
-import { getCustomerOptions } from "@/lib/queries/form-data";
+import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
 import { previewNextBillingNoAction } from "@/app/receipts/actions";
 import { todayBE } from "@/lib/thai/date";
 
@@ -11,8 +11,9 @@ export const dynamic = "force-dynamic";
 
 export default async function NewBillingSlipPage() {
   const today = todayBE();
-  const [customers, preview] = await Promise.all([
+  const [customers, products, preview] = await Promise.all([
     getCustomerOptions(),
+    getProductOptions(),
     previewNextBillingNoAction(today),
   ]);
 
@@ -32,6 +33,7 @@ export default async function NewBillingSlipPage() {
           mode="new"
           previewDocNo={preview.docNo}
           customers={customers}
+          products={products}
           initial={{
             docDate: today,
             dueDate: null,

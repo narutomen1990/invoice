@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Save, AlertCircle, X, Printer, FileText,
+  Save, AlertCircle, X, Printer, FileText, Plus,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { formatMoney, bahtText } from "@/lib/thai/number";
 import {
   createBillingSlipAction,
@@ -26,6 +26,14 @@ type Customer = {
   tel: string | null;
 };
 
+type Product = {
+  id: number;
+  code: string;
+  name: string;
+  unit: string | null;
+  price: number;
+};
+
 type ItemRow = {
   lineNo: string;
   productCode: string;
@@ -33,11 +41,6 @@ type ItemRow = {
   quantity: string;
   unit: string;
   unitPrice: string;
-  // billing-specific fields shown in legacy UI
-  invoiceNo?: string;
-  invoiceDate?: string;
-  dueDate?: string;
-  customerCode?: string;
 };
 
 export type BillingSlipFormInitial = {
@@ -77,16 +80,12 @@ const EMPTY_ROW: ItemRow = {
   lineNo: "",
   productCode: "",
   description: "",
-  quantity: "1",
+  quantity: "",
   unit: "",
   unitPrice: "0",
-  invoiceNo: "",
-  invoiceDate: "",
-  dueDate: "",
-  customerCode: "",
 };
 
-const MIN_ROWS = 11;
+const MIN_ROWS = 14;
 
 function fillRows(items: ItemRow[]): ItemRow[] {
   const copy = items.length > 0 ? [...items] : [];
@@ -100,17 +99,37 @@ function splitAddress(addr: string | null): [string, string, string] {
   return [parts[0] ?? "", parts[1] ?? "", parts[2] ?? ""];
 }
 
+/** a row with nothing typed into it anywhere — the kind fillRows() pads the table out with */
+function isRowBlank(it: ItemRow): boolean {
+  return (
+    !it.description.trim() &&
+    !it.lineNo.trim() &&
+    !it.productCode &&
+    !(parseFloat(it.quantity) || 0) &&
+    !(parseFloat(it.unitPrice) || 0)
+  );
+}
+
+/** grows a textarea's height to fit its content, so multi-line item descriptions stay fully visible */
+function autoGrow(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 const PAY_METHODS = ["CASH", "Transfer", "Cheque", "Credit Card", "Not Yet"];
 
 export function BillingSlipForm({
   mode,
   initial,
   customers,
+  products,
   previewDocNo,
 }: {
   mode: "new" | "edit";
   initial: BillingSlipFormInitial;
   customers: Customer[];
+  products: Product[];
   previewDocNo?: string;
 }) {
   const router = useRouter();
@@ -165,6 +184,36 @@ export function BillingSlipForm({
 
   const [items, setItems] = useState<ItemRow[]>(fillRows(initial.items));
 
+  // แถวรายการ: Enter เลื่อนไปช่องถัดไปในแถวเดียวกัน (แบบสเปรดชีต) —
+  // Shift+Enter ในช่องรายการยังคงขึ้นบรรทัดใหม่ได้ตามเดิม
+  const descRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
+  const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const unitRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const priceRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  function focusAndSelect(el: HTMLInputElement | HTMLTextAreaElement | null | undefined) {
+    if (!el) return;
+    el.focus();
+    el.select();
+  }
+
+  function descEnterToNext(e: React.KeyboardEvent<HTMLTextAreaElement>, i: number) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      focusAndSelect(qtyRefs.current[i]);
+    }
+  }
+
+  function fieldEnterToNext(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    next: HTMLInputElement | HTMLTextAreaElement | null | undefined,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      focusAndSelect(next);
+    }
+  }
+
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, it) => {
       const q = parseFloat(it.quantity) || 0;
@@ -206,6 +255,32 @@ export function BillingSlipForm({
     setItems((prev) => prev.map((r, i) => (i === idx ? { ...r, [key]: value } : r)));
   }
 
+  function pickProduct(rowIdx: number, productId: number) {
+    const p = products.find((x) => x.id === productId);
+    if (!p) return;
+    setItems((prev) =>
+      prev.map((r, i) =>
+        i === rowIdx
+          ? {
+              ...r,
+              productCode: p.code,
+              description: p.name,
+              unit: p.unit ?? "",
+              unitPrice: String(p.price),
+            }
+          : r,
+      ),
+    );
+  }
+
+  function addRow() {
+    setItems((prev) => [...prev, { ...EMPTY_ROW }]);
+  }
+
+  function removeRow(idx: number) {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   function buildFormData(): FormData {
     const fd = new FormData();
     fd.set("docDate", docDate);
@@ -241,8 +316,14 @@ export function BillingSlipForm({
     fd.set("memo", memo);
     fd.set("remark1", remark1);
 
+    // keep blank rows the user left in the middle on purpose (visual spacers between groups);
+    // only drop the trailing run of untouched placeholder rows fillRows() pads the table with.
+    let lastContentIdx = -1;
+    items.forEach((it, i) => {
+      if (!isRowBlank(it)) lastContentIdx = i;
+    });
     const validItems = items
-      .filter((it) => it.description.trim() || (it.invoiceNo ?? "").trim())
+      .slice(0, lastContentIdx + 1)
       .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
@@ -251,7 +332,7 @@ export function BillingSlipForm({
         return {
           lineNo: Number.isNaN(ln) ? null : ln,
           productCode: it.productCode || null,
-          description: it.description || it.invoiceNo || "-",
+          description: it.description,
           quantity: q,
           unit: it.unit || null,
           unitPrice: p,
@@ -509,7 +590,7 @@ export function BillingSlipForm({
             </div>
           </div>
 
-          {/* Items table — INVOICE list */}
+          {/* Items table — same layout/data entry as the invoice form */}
           <div
             className="overflow-auto"
             style={{ maxHeight: "calc(100vh - 32rem)" }}
@@ -517,16 +598,28 @@ export function BillingSlipForm({
             <table className="w-full border-collapse text-[12px]">
               <thead className="sticky top-0 z-10 bg-sky-200 text-sky-900">
                 <tr>
-                  <th className="w-[42px] border border-sky-300 px-1 py-1">No.</th>
-                  <th className="w-[110px] border border-sky-300 px-1 py-1">INVOICE</th>
-                  <th className="w-[80px] border border-sky-300 px-1 py-1">DATE</th>
-                  <th className="w-[80px] border border-sky-300 px-1 py-1">DUE</th>
-                  <th className="w-[80px] border border-sky-300 px-1 py-1">รหัสลูกค้า</th>
-                  <th className="w-[90px] border border-sky-300 px-1 py-1">AMOUNT</th>
-                  <th className="w-[70px] border border-sky-300 px-1 py-1">VAT</th>
-                  <th className="w-[90px] border border-sky-300 px-1 py-1">มูลค่ารวม</th>
-                  <th className="w-[90px] border border-sky-300 px-1 py-1">ค้างชำระ</th>
-                  <th className="w-[90px] border border-sky-300 px-1 py-1">ยอดชำระ</th>
+                  <th className="w-[88px] border border-sky-300 px-1.5 py-1 text-center font-semibold">
+                    รหัส<div className="text-[9px] font-normal italic text-sky-700">Code</div>
+                  </th>
+                  <th className="w-[42px] border border-sky-300 px-1 py-1 text-center font-semibold">
+                    ลำดับ<div className="text-[9px] font-normal italic text-sky-700">No.</div>
+                  </th>
+                  <th className="border border-sky-300 px-1.5 py-1 text-center font-semibold">
+                    รายการ<div className="text-[9px] font-normal italic text-sky-700">Description</div>
+                  </th>
+                  <th className="w-[80px] border border-sky-300 px-1 py-1 text-center font-semibold">
+                    จำนวน<div className="text-[9px] font-normal italic text-sky-700">Quantity</div>
+                  </th>
+                  <th className="w-[60px] border border-sky-300 px-1 py-1 text-center font-semibold">
+                    หน่วย<div className="text-[9px] font-normal italic text-sky-700">Unit</div>
+                  </th>
+                  <th className="w-[90px] border border-sky-300 px-1 py-1 text-center font-semibold">
+                    ราคาต่อหน่วย<div className="text-[9px] font-normal italic text-sky-700">UnitPrice</div>
+                  </th>
+                  <th className="w-[100px] border border-sky-300 px-1 py-1 text-center font-semibold">
+                    จำนวนเงิน<div className="text-[9px] font-normal italic text-sky-700">Amount</div>
+                  </th>
+                  <th className="w-[36px] border border-sky-300 bg-sky-200 px-0.5 py-1"></th>
                 </tr>
               </thead>
               <tbody>
@@ -534,9 +627,25 @@ export function BillingSlipForm({
                   const q = parseFloat(row.quantity) || 0;
                   const p = parseFloat(row.unitPrice) || 0;
                   const amt = q * p;
-                  const vat = +((amt * (parseFloat(vatRate) || 0)) / 100).toFixed(2);
                   return (
                     <tr key={i} className="hover:bg-sky-50">
+                      <td className="border border-sky-200 p-0">
+                        <Select
+                          value=""
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v) pickProduct(i, parseInt(v, 10));
+                          }}
+                          className="h-7 w-full border-0 bg-transparent text-[11px] focus:ring-0"
+                        >
+                          <option value="">{row.productCode || "—"}</option>
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              [{p.code}] {p.name}
+                            </option>
+                          ))}
+                        </Select>
+                      </td>
                       <td className="border border-sky-200 p-0">
                         <Input
                           value={row.lineNo}
@@ -546,33 +655,43 @@ export function BillingSlipForm({
                         />
                       </td>
                       <td className="border border-sky-200 p-0">
-                        <Input
-                          value={row.invoiceNo ?? ""}
-                          onChange={(e) => updateItem(i, "invoiceNo", e.target.value)}
-                          className="h-7 w-full border-0 bg-transparent text-[11px] font-mono focus:ring-0"
+                        <textarea
+                          value={row.description}
+                          onChange={(e) => {
+                            updateItem(i, "description", e.target.value);
+                            autoGrow(e.target);
+                          }}
+                          onKeyDown={(e) => descEnterToNext(e, i)}
+                          ref={(el) => {
+                            autoGrow(el);
+                            descRefs.current[i] = el;
+                          }}
+                          rows={1}
+                          className="block min-h-7 w-full resize-none overflow-hidden border-0 bg-transparent px-3 py-1 text-[12px] leading-[1.3] focus:outline-none focus:ring-0"
                         />
                       </td>
                       <td className="border border-sky-200 p-0">
                         <Input
-                          value={row.invoiceDate ?? ""}
-                          onChange={(e) => updateItem(i, "invoiceDate", e.target.value)}
+                          type="number"
+                          step="0.001"
+                          value={row.quantity}
+                          onChange={(e) => updateItem(i, "quantity", e.target.value)}
+                          onKeyDown={(e) => fieldEnterToNext(e, unitRefs.current[i])}
+                          ref={(el) => {
+                            qtyRefs.current[i] = el;
+                          }}
+                          className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
+                        />
+                      </td>
+                      <td className="border border-sky-200 p-0">
+                        <Input
+                          value={row.unit}
+                          onChange={(e) => updateItem(i, "unit", e.target.value)}
+                          onKeyDown={(e) => fieldEnterToNext(e, priceRefs.current[i])}
+                          ref={(el) => {
+                            unitRefs.current[i] = el;
+                          }}
                           className="h-7 w-full border-0 bg-transparent text-center text-[11px] focus:ring-0"
-                          placeholder="DD/MM/YY"
-                        />
-                      </td>
-                      <td className="border border-sky-200 p-0">
-                        <Input
-                          value={row.dueDate ?? ""}
-                          onChange={(e) => updateItem(i, "dueDate", e.target.value)}
-                          className="h-7 w-full border-0 bg-transparent text-center text-[11px] focus:ring-0"
-                          placeholder="DD/MM/YY"
-                        />
-                      </td>
-                      <td className="border border-sky-200 p-0">
-                        <Input
-                          value={row.customerCode ?? ""}
-                          onChange={(e) => updateItem(i, "customerCode", e.target.value)}
-                          className="h-7 w-full border-0 bg-transparent text-[11px] focus:ring-0"
                         />
                       </td>
                       <td className="border border-sky-200 p-0">
@@ -581,26 +700,25 @@ export function BillingSlipForm({
                           step="0.01"
                           value={row.unitPrice}
                           onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
+                          onKeyDown={(e) => fieldEnterToNext(e, descRefs.current[i + 1])}
+                          ref={(el) => {
+                            priceRefs.current[i] = el;
+                          }}
                           className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
                         />
                       </td>
-                      <td className="border border-sky-200 px-1 text-right text-[11px] tabular-nums text-zinc-700">
-                        {amt > 0 ? formatMoney(vat) : ""}
+                      <td className="border border-sky-200 px-1.5 text-right text-[12px] font-semibold tabular-nums">
+                        {formatMoney(amt)}
                       </td>
-                      <td className="border border-sky-200 px-1 text-right text-[12px] font-semibold tabular-nums">
-                        {amt > 0 ? formatMoney(amt + vat) : ""}
-                      </td>
-                      <td className="border border-sky-200 px-1 text-right text-[12px] tabular-nums text-rose-700">
-                        {amt > 0 ? formatMoney(amt + vat) : ""}
-                      </td>
-                      <td className="border border-sky-200 p-0">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={row.quantity}
-                          onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                          className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
-                        />
+                      <td className="border border-sky-200 p-0 text-center">
+                        <button
+                          type="button"
+                          onClick={() => removeRow(i)}
+                          className="h-7 w-full text-[10px] text-rose-600 hover:bg-rose-50"
+                          title="ลบแถว"
+                        >
+                          ลบ
+                        </button>
                       </td>
                     </tr>
                   );
@@ -759,6 +877,16 @@ export function BillingSlipForm({
           >
             <Save className="h-4 w-4" />
             <span>Save บันทึกทับ</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={addRow}
+            title="เพิ่มแถวรายการในตาราง"
+            className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-zinc-500 bg-gradient-to-b from-zinc-200 to-zinc-300 px-2 text-sm font-semibold text-zinc-800 shadow-sm transition active:translate-y-px hover:from-zinc-300 hover:to-zinc-400"
+          >
+            <Plus className="h-4 w-4" />
+            <span>เพิ่มแถวรายการ</span>
           </button>
 
           <button
