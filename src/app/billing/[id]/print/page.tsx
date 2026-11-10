@@ -24,6 +24,15 @@ function branchLabel(code: string | null): string {
   return `สาขา ${n}`;
 }
 
+// สาขาของลูกค้า: เลข 0 ล้วน (เช่น "0000") = สำนักงานใหญ่, นอกนั้นโชว์เลขดิบตามที่กรอก (เหมือนใบกำกับ)
+function customerBranchLabel(code: string | null): string {
+  if (!code) return "-";
+  const c = code.trim();
+  if (!c) return "-";
+  if (/^0+$/.test(c)) return "สำนักงานใหญ่";
+  return c;
+}
+
 export default async function PrintBillingPage({
   params,
   searchParams,
@@ -148,7 +157,8 @@ export default async function PrintBillingPage({
         {/* BODY: customer + doc-info */}
         <div className="body">
           <div className="customer-box">
-            <div className="cust-row code-row">
+            {/* Row 1: รหัส [code] */}
+            <div className="cust-top-row">
               <span className="cust-lbl-tight">
                 <span className="lbl-th">รหัส</span>
                 <span className="lbl-en">CODE</span>
@@ -156,13 +166,18 @@ export default async function PrintBillingPage({
               <span className="cust-val-tight mono">
                 {doc.customerCode ?? "-"}
               </span>
+            </div>
+
+            {/* Row 2: เลขประจำตัวผู้เสียภาษีผู้ซื้อ [taxid]   สาขาที่ [branch] —
+                แยกบรรทัดเหมือนใบกำกับ เพื่อไม่ให้ค่าสาขาถูกตัดไปขึ้นบรรทัดใหม่ */}
+            <div className="cust-tax-row">
               <span className="cust-lbl-mid">เลขประจำตัวผู้เสียภาษีผู้ซื้อ :</span>
               <span className="cust-val-tight">
                 {doc.customerTaxId ?? "-"}
               </span>
               <span className="cust-lbl-mid">สาขาที่ :</span>
               <span className="cust-val-tight">
-                {branchLabel(doc.customerBranch)}
+                {customerBranchLabel(doc.customerBranch)}
               </span>
             </div>
 
@@ -244,6 +259,13 @@ export default async function PrintBillingPage({
         {/* ITEMS */}
         <div className="items-wrap">
           <table className="items">
+            <colgroup>
+              <col className="c-no" />
+              <col />
+              <col className="c-qty" />
+              <col className="c-price" />
+              <col className="c-amt" />
+            </colgroup>
             <thead>
               <tr>
                 <th className="col-no">
@@ -272,7 +294,7 @@ export default async function PrintBillingPage({
               {items.map((it, idx) => (
                 <tr key={idx}>
                   <td className="ctr">{it.lineNo ?? ""}</td>
-                  <td>{it.description ?? ""}</td>
+                  <td className="desc">{it.description ?? ""}</td>
                   <td className="ctr">
                     {it.quantity
                       ? `${formatMoney(
@@ -298,6 +320,26 @@ export default async function PrintBillingPage({
                   <td></td>
                 </tr>
               ))}
+            </tbody>
+          </table>
+          {/* filler: takes the leftover page height so the footer stays at the bottom,
+              without stretching the item rows above (which spread lines far apart) */}
+          <table className="items items-filler" aria-hidden="true">
+            <colgroup>
+              <col className="c-no" />
+              <col />
+              <col className="c-qty" />
+              <col className="c-price" />
+              <col className="c-amt" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td className="col-no"></td>
+                <td className="col-desc"></td>
+                <td className="col-qty"></td>
+                <td className="col-price"></td>
+                <td className="col-amt"></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -436,7 +478,13 @@ export default async function PrintBillingPage({
           flex-direction: column;
         }
         .items-wrap { flex: 1 1 auto; display: flex; flex-direction: column; }
-        .items-wrap .items { flex: 1 1 auto; }
+        .items-wrap .items { table-layout: fixed; }
+        /* explicit column widths shared by the items table and its filler, so the column lines line up */
+        .items col.c-no { width: 14mm; }
+        .items col.c-qty { width: 24mm; }
+        .items col.c-price { width: 28mm; }
+        .items col.c-amt { width: 28mm; }
+        .items-wrap .items-filler { flex: 1 1 auto; }
         .items tbody { vertical-align: top; }
 
         /* TOP */
@@ -467,7 +515,8 @@ export default async function PrintBillingPage({
         .body { display: flex; gap: 2mm; margin-bottom: 0; }
         .customer-box { flex: 1.4; padding: 2mm 3mm; border: 1px solid #000; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom: 0; }
         .doc-info { flex: 1; padding: 0; border: 1px solid #000; border-top-left-radius: 6px; border-top-right-radius: 6px; border-bottom: 0; overflow: hidden; display: flex; flex-direction: column; }
-        .cust-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2mm 4mm; padding: 1mm 0; font-size: 10px; }
+        .cust-top-row { display: flex; align-items: baseline; gap: 2mm; padding: 1mm 0; font-size: 10px; }
+        .cust-tax-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2mm 6mm; padding: 0 0 1.5mm; font-size: 10px; margin-bottom: 0.5mm; }
         .cust-lbl-tight { display: inline-flex; align-items: baseline; gap: 1mm; font-style: italic; color: #333; }
         .cust-lbl-tight .lbl-th { font-weight: 600; font-size: 11px; }
         .cust-lbl-tight .lbl-en { font-size: 8.5px; }
@@ -508,6 +557,7 @@ export default async function PrintBillingPage({
         .items td.ctr { text-align: center; font-style: italic; }
         .items td.rt { text-align: right; font-style: italic; font-variant-numeric: tabular-nums; }
         .items tr.blank td { height: 6.5mm; }
+        .items td.desc { white-space: pre-wrap; }
 
         /* FOOTER */
         .footer-row { display: flex; gap: 0; align-items: stretch; }
