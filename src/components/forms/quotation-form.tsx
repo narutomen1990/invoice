@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Plus, Save, AlertCircle, X, Printer, Trash2,
+  Plus, Save, AlertCircle, X, Printer, Trash2, Calendar,
 } from "lucide-react";
 import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,11 @@ type Product = {
   name: string;
   unit: string | null;
   price: number;
+};
+
+type Salesman = {
+  id: number;
+  name: string;
 };
 
 type ItemRow = {
@@ -81,7 +86,7 @@ const EMPTY_ROW: ItemRow = {
   lineNo: "",
   productCode: "",
   description: "",
-  quantity: "1",
+  quantity: "",
   unit: "",
   unitPrice: "0",
 };
@@ -100,18 +105,94 @@ function splitAddress(addr: string | null): [string, string, string] {
   return [parts[0] ?? "", parts[1] ?? "", parts[2] ?? ""];
 }
 
+/** 'YYYY-MM-DD' (พ.ศ.) → 'DD/MM/YYYY' for display/editing */
+function isoToDmy(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return iso;
+  const [, y, mo, d] = m;
+  return `${d}/${mo}/${y}`;
+}
+
+/** 'DD/MM/YYYY' → 'YYYY-MM-DD', or null if not a complete valid-looking date yet */
+function dmyToIso(dmy: string): string | null {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+/** a row with nothing typed into it anywhere — the kind fillRows() pads the table out with */
+function isRowBlank(it: ItemRow): boolean {
+  return (
+    !it.description.trim() &&
+    !it.lineNo.trim() &&
+    !it.productCode &&
+    !(parseFloat(it.quantity) || 0) &&
+    !(parseFloat(it.unitPrice) || 0)
+  );
+}
+
+/** grows a textarea's height to fit its content, so multi-line item descriptions stay fully visible */
+function autoGrow(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${el.scrollHeight}px`;
+}
+
+/** auto-inserts '/' as the user types digits: '25072569' → '25/07/2569' */
+function maskDmyInput(raw: string): string {
+  const digits = raw.replace(/[^\d]/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+/** 'DD/MM/YYYY' (พ.ศ.) → 'YYYY-MM-DD' (ค.ศ.) for native <input type="date">, or "" if incomplete */
+function dmyBeToIsoCe(dmy: string): string {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return "";
+  const [, d, mo, y] = m;
+  const ce = parseInt(y, 10) - 543;
+  return `${ce}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
+/** 'YYYY-MM-DD' (ค.ศ., from a native date picker) → 'DD/MM/YYYY' (พ.ศ.) */
+function isoCeToDmyBe(iso: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  return `${d}/${mo}/${parseInt(y, 10) + 543}`;
+}
+
+/** 'DD/MM/YYYY' (พ.ศ.) + N days → new 'DD/MM/YYYY' (พ.ศ.), or null if the input date isn't complete yet */
+function addDaysDmy(dmy: string, days: number): string | null {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(dmy.trim());
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  const dt = new Date(parseInt(y, 10) - 543, parseInt(mo, 10) - 1, parseInt(d, 10));
+  dt.setDate(dt.getDate() + days);
+  const yyyy = dt.getFullYear() + 543;
+  const mm = String(dt.getMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getDate()).padStart(2, "0");
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 export function QuotationForm({
   mode,
   initial,
   customers,
   products,
+  salesmen,
   previewDocNo,
+  lockSalesman,
 }: {
   mode: "new" | "edit";
   initial: QuotationFormInitial;
   customers: Customer[];
   products: Product[];
+  salesmen: Salesman[];
   previewDocNo?: string;
+  lockSalesman?: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -125,8 +206,15 @@ export function QuotationForm({
   }, [savedToast]);
 
   // ---- header ----
-  const [docDate, setDocDate] = useState(initial.docDate);
-  const [dueDate, setDueDate] = useState(initial.dueDate ?? "");
+  const [docDate, setDocDate] = useState(() => isoToDmy(initial.docDate));
+  // ใบใหม่: ตั้งวันที่ครบกำหนด = วันที่ใบเสนอราคา + กำหนดยืนราคา ให้อัตโนมัติ
+  const [dueDate, setDueDate] = useState(() =>
+    initial.dueDate
+      ? isoToDmy(initial.dueDate)
+      : mode === "new" && initial.validityDays > 0
+        ? (addDaysDmy(isoToDmy(initial.docDate), initial.validityDays) ?? "")
+        : "",
+  );
   const [terms, setTerms] = useState(initial.paymentTermsDays);
   const [docNo, setDocNo] = useState(initial.docNo ?? previewDocNo ?? "");
   const [docNoCheck, setDocNoCheck] = useState<{
@@ -169,6 +257,46 @@ export function QuotationForm({
   const [remark1, setRemark1] = useState(initial.remark1 ?? "สินค้าที่เสียชำรุดจากการใช้งานปกติ ต้องส่งเข้าศูนย์เท่านั้น");
 
   const [items, setItems] = useState<ItemRow[]>(fillRows(initial.items));
+
+  // แถวรายการ: Enter เลื่อนไปช่องถัดไปในแถวเดียวกัน (แบบสเปรดชีต) —
+  // Shift+Enter ในช่องรายการยังคงขึ้นบรรทัดใหม่ได้ตามเดิม
+  const descRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
+  const qtyRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const unitRefs = useRef<Array<HTMLInputElement | null>>([]);
+  const priceRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  function focusAndSelect(el: HTMLInputElement | HTMLTextAreaElement | null | undefined) {
+    if (!el) return;
+    el.focus();
+    el.select();
+  }
+
+  function descEnterToNext(e: React.KeyboardEvent<HTMLTextAreaElement>, i: number) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      focusAndSelect(qtyRefs.current[i]);
+    }
+  }
+
+  function fieldEnterToNext(
+    e: React.KeyboardEvent<HTMLInputElement>,
+    next: HTMLInputElement | HTMLTextAreaElement | null | undefined,
+  ) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      focusAndSelect(next);
+    }
+  }
+
+  /** เปลี่ยนกำหนดยืนราคา → คำนวณวันที่ครบกำหนดใหม่จากวันที่ใบเสนอราคา */
+  function changeValidityDays(raw: string) {
+    setValidityDays(raw);
+    const v = parseInt(raw) || 0;
+    if (v > 0) {
+      const next = addDaysDmy(docDate, v);
+      if (next) setDueDate(next);
+    }
+  }
 
   // ---- totals ----
   const totals = useMemo(() => {
@@ -282,8 +410,8 @@ export function QuotationForm({
 
   function buildFormData(): FormData {
     const fd = new FormData();
-    fd.set("docDate", docDate);
-    fd.set("dueDate", dueDate);
+    fd.set("docDate", dmyToIso(docDate) ?? docDate);
+    fd.set("dueDate", dueDate ? (dmyToIso(dueDate) ?? dueDate) : "");
     fd.set("paymentTermsDays", String(terms));
     if (
       mode === "new" &&
@@ -313,8 +441,14 @@ export function QuotationForm({
     fd.set("deliveryDays", deliveryDays);
     fd.set("warrantyMonths", warrantyMonths);
 
+    // keep blank rows the user left in the middle on purpose (visual spacers between groups);
+    // only drop the trailing run of untouched placeholder rows fillRows() pads the table with.
+    let lastContentIdx = -1;
+    items.forEach((it, i) => {
+      if (!isRowBlank(it)) lastContentIdx = i;
+    });
     const validItems = items
-      .filter((it) => it.description.trim())
+      .slice(0, lastContentIdx + 1)
       .map((it) => {
         const q = parseFloat(it.quantity) || 0;
         const p = parseFloat(it.unitPrice) || 0;
@@ -499,16 +633,47 @@ export function QuotationForm({
                       ? "border-green-400 bg-green-50"
                       : "bg-yellow-50"
                 }`}
-                placeholder="QT69/05-00001"
+                placeholder="QT69/05-00001 (เว้นว่าง = auto)"
               />
+              {mode === "new" && (
+                <p
+                  className={`mt-0.5 text-[10px] ${
+                    docNoCheck.state === "dup" || docNoCheck.state === "invalid"
+                      ? "text-red-600"
+                      : docNoCheck.state === "ok"
+                        ? "text-green-600"
+                        : "text-zinc-500"
+                  }`}
+                >
+                  {docNoCheck.state === "checking"
+                    ? "กำลังตรวจสอบ..."
+                    : docNoCheck.state === "ok"
+                      ? "✓ ใช้ได้ (ข้ามเลขได้)"
+                      : docNoCheck.state === "dup" || docNoCheck.state === "invalid"
+                        ? `✗ ${docNoCheck.msg}`
+                        : "พิมพ์เองหรือเว้นว่างให้ระบบใส่อัตโนมัติ"}
+                </p>
+              )}
             </div>
             <div className="col-span-2">
               <Lbl>พนักงานขาย</Lbl>
-              <Input
+              <Select
                 value={preparedBy}
                 onChange={(e) => setPreparedBy(e.target.value)}
-                className="h-7 bg-white"
-              />
+                disabled={lockSalesman}
+                title={lockSalesman ? "คุณไม่มีสิทธิ์เปลี่ยนพนักงานขาย" : undefined}
+                className="h-7 bg-white disabled:opacity-70"
+              >
+                <option value="">— เลือกพนักงานขาย —</option>
+                {preparedBy && !salesmen.some((s) => s.name === preparedBy) && (
+                  <option value={preparedBy}>{preparedBy}</option>
+                )}
+                {salesmen.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+              </Select>
             </div>
             <div className="col-span-2">
               <Lbl>โทรศัพท์ พนักงานขาย</Lbl>
@@ -608,19 +773,33 @@ export function QuotationForm({
             </div>
             <div className="col-span-2">
               <Lbl>วันที่ใบเสนอราคา</Lbl>
-              <Input
-                value={docDate}
-                onChange={(e) => setDocDate(e.target.value)}
-                className="h-7 bg-white text-center"
-                placeholder="YYYY-MM-DD"
-              />
+              <div className="relative">
+                <Input
+                  value={docDate}
+                  onChange={(e) => setDocDate(maskDmyInput(e.target.value))}
+                  className="h-7 bg-white pr-6 text-center"
+                  placeholder="DD/MM/YYYY"
+                  maxLength={10}
+                />
+                <input
+                  type="date"
+                  value={dmyBeToIsoCe(docDate)}
+                  onChange={(e) => {
+                    const next = isoCeToDmyBe(e.target.value);
+                    if (next) setDocDate(next);
+                  }}
+                  title="เลือกวันที่จากปฏิทิน"
+                  className="absolute inset-y-0 right-0 w-6 cursor-pointer opacity-0"
+                />
+                <Calendar className="pointer-events-none absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400" />
+              </div>
             </div>
             <div className="col-span-2">
               <Lbl>กำหนดยืนราคา</Lbl>
               <Input
                 type="number"
                 value={validityDays}
-                onChange={(e) => setValidityDays(e.target.value)}
+                onChange={(e) => changeValidityDays(e.target.value)}
                 className="h-7 bg-white text-center font-semibold tabular-nums"
               />
             </div>
@@ -628,9 +807,10 @@ export function QuotationForm({
               <Lbl>วันที่ครบกำหนด</Lbl>
               <Input
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={(e) => setDueDate(maskDmyInput(e.target.value))}
                 className="h-7 bg-white text-center"
-                placeholder="YYYY-MM-DD"
+                placeholder="DD/MM/YYYY"
+                maxLength={10}
               />
             </div>
           </div>
@@ -670,7 +850,6 @@ export function QuotationForm({
                 const q = parseFloat(row.quantity) || 0;
                 const p = parseFloat(row.unitPrice) || 0;
                 const amt = q * p;
-                const isEmpty = !row.description.trim() && q === 0 && p === 0;
                 return (
                   <tr key={i} className="hover:bg-sky-50">
                     <td className="border border-sky-200 p-0">
@@ -699,10 +878,19 @@ export function QuotationForm({
                       />
                     </td>
                     <td className="border border-sky-200 p-0">
-                      <Input
+                      <textarea
                         value={row.description}
-                        onChange={(e) => updateItem(i, "description", e.target.value)}
-                        className="h-7 w-full border-0 bg-transparent text-[12px] focus:ring-0"
+                        onChange={(e) => {
+                          updateItem(i, "description", e.target.value);
+                          autoGrow(e.target);
+                        }}
+                        onKeyDown={(e) => descEnterToNext(e, i)}
+                        ref={(el) => {
+                          autoGrow(el);
+                          descRefs.current[i] = el;
+                        }}
+                        rows={1}
+                        className="block min-h-7 w-full resize-none overflow-hidden border-0 bg-transparent px-3 py-1 text-[12px] leading-[1.3] focus:outline-none focus:ring-0"
                       />
                     </td>
                     <td className="border border-sky-200 p-0">
@@ -711,6 +899,10 @@ export function QuotationForm({
                         step="0.001"
                         value={row.quantity}
                         onChange={(e) => updateItem(i, "quantity", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, unitRefs.current[i])}
+                        ref={(el) => {
+                          qtyRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
                       />
                     </td>
@@ -718,6 +910,10 @@ export function QuotationForm({
                       <Input
                         value={row.unit}
                         onChange={(e) => updateItem(i, "unit", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, priceRefs.current[i])}
+                        ref={(el) => {
+                          unitRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-center text-[11px] focus:ring-0"
                       />
                     </td>
@@ -727,6 +923,10 @@ export function QuotationForm({
                         step="0.01"
                         value={row.unitPrice}
                         onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
+                        onKeyDown={(e) => fieldEnterToNext(e, descRefs.current[i + 1])}
+                        ref={(el) => {
+                          priceRefs.current[i] = el;
+                        }}
                         className="h-7 w-full border-0 bg-transparent text-right text-[12px] tabular-nums focus:ring-0"
                       />
                     </td>
@@ -779,7 +979,7 @@ export function QuotationForm({
               <Input
                 type="number"
                 value={validityDays}
-                onChange={(e) => setValidityDays(e.target.value)}
+                onChange={(e) => changeValidityDays(e.target.value)}
                 className="h-7 w-12 bg-white text-center font-semibold tabular-nums"
               />
               <span className="text-[11px] text-zinc-700">วัน</span>

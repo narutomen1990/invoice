@@ -5,7 +5,12 @@ import { sql } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { QuotationForm } from "@/components/forms/quotation-form";
-import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
+import {
+  getCustomerOptions,
+  getProductOptions,
+  getSalesmanOptions,
+} from "@/lib/queries/form-data";
+import { getSession } from "@/lib/auth/session";
 import { db } from "@/db/client";
 
 export const dynamic = "force-dynamic";
@@ -49,10 +54,12 @@ export default async function EditQuotationPage({
   const numId = parseInt(id, 10);
   if (Number.isNaN(numId)) notFound();
 
-  const [data, customers, products] = await Promise.all([
+  const [data, customers, products, salesmen, session] = await Promise.all([
     getQuotationForEdit(numId),
     getCustomerOptions(),
     getProductOptions(),
+    getSalesmanOptions(),
+    getSession(),
   ]);
 
   if (!data) notFound();
@@ -67,6 +74,11 @@ export default async function EditQuotationPage({
       </AppShell>
     );
   }
+
+  // ใบที่ยังไม่มีพนักงานขาย — staff ถูกล็อกช่องนี้ จึงเติมชื่อตัวเองให้อัตโนมัติ (เหมือนใบกำกับ)
+  const myName = session?.fullName?.trim() || session?.username || null;
+  const preparedBy =
+    doc.saleman_name?.trim() || (session?.role === "staff" ? myName : doc.saleman_name);
 
   const legacy = (doc.legacy_data as QuotationLegacyData | null) ?? {};
   const terms = legacy.quotationTerms ?? {};
@@ -87,6 +99,8 @@ export default async function EditQuotationPage({
           mode="edit"
           customers={customers}
           products={products}
+          salesmen={salesmen}
+          lockSalesman={session?.role === "staff"}
           initial={{
             id: Number(doc.id),
             docNo: doc.doc_no,
@@ -102,7 +116,7 @@ export default async function EditQuotationPage({
             customerTel: doc.customer_tel_snapshot,
             customerProvince: doc.customer_province_snapshot,
             customerEmail: terms.customerEmail ?? null,
-            preparedBy: doc.saleman_name,
+            preparedBy,
             shippingMethod: doc.shipping_method,
             purchaseOrderNo: doc.reference_quotation_no,
             discount: Number(doc.discount ?? 0),

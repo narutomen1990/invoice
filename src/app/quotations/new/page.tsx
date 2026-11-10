@@ -3,19 +3,27 @@ import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { QuotationForm } from "@/components/forms/quotation-form";
-import { getCustomerOptions, getProductOptions } from "@/lib/queries/form-data";
+import {
+  getCustomerOptions,
+  getProductOptions,
+  getSalesmanOptions,
+} from "@/lib/queries/form-data";
 import { previewNextQuotationNoAction } from "@/app/quotations/actions";
 import { todayBE } from "@/lib/thai/date";
+import { getSession } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewQuotationPage() {
   const today = todayBE();
-  const [customers, products, preview] = await Promise.all([
+  const [session, customers, products, salesmen, preview] = await Promise.all([
+    getSession(),
     getCustomerOptions(),
     getProductOptions(),
+    getSalesmanOptions(),
     previewNextQuotationNoAction(today),
   ]);
+  const myName = session?.fullName?.trim() || session?.username || null;
 
   return (
     <AppShell>
@@ -34,6 +42,8 @@ export default async function NewQuotationPage() {
           previewDocNo={preview.docNo}
           customers={customers}
           products={products}
+          salesmen={salesmen}
+          lockSalesman={session?.role === "staff"}
           initial={{
             docDate: today,
             dueDate: null,
@@ -47,7 +57,7 @@ export default async function NewQuotationPage() {
             customerTel: null,
             customerProvince: null,
             customerEmail: null,
-            preparedBy: null,
+            preparedBy: myName,
             shippingMethod: null,
             purchaseOrderNo: null,
             discount: 0,
